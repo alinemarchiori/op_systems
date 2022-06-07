@@ -18,8 +18,8 @@ def escolheAlgoritmo():
     if algoritmo == 1:
         alternanciaCircular(leArquivo("alternancia.txt"))
         
-    elif algoritmo == 2:
-        porPrioridade(leArquivo("prioridades.txt"))
+#    elif algoritmo == 2:
+#        porPrioridade(leArquivo("prioridades.txt"))
         
     elif algoritmo == 3:
         loteria(leArquivo("loteria.txt"))
