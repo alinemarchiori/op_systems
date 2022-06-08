@@ -1,11 +1,12 @@
 from alternancia_circular import *
-from por_prioridade import *
+#from por_prioridade import *
 from loteria import *
+import threading 
 
-#PONTOS A SEREM RESOLVIDOS
+#Como serão adicionados os novos processos em tempo de execução? (Perguntar para o professor)
 
-# - caminho do arquivo padrão
-# - 
+def adicionaNovoProcesso():
+    pass
 
 def leArquivo(nomedoarquivo):
     arquivo = open(nomedoarquivo,'r')
@@ -15,19 +16,22 @@ def leArquivo(nomedoarquivo):
 def escolheAlgoritmo(): 
     algoritmo = int(input("1 - Alternancia Circular\n2 - Por prioridade\n3 - Loteria\n"))
     
-    if algoritmo == 1:
-        alternanciaCircular(leArquivo("alternancia.txt"))
+    if algoritmo == 1: #precisa escrever novamente no arquivo? add loop while até que acabem os processos
+        alternanciaCircular(leArquivo("exemplos_entradas\\alternancia.txt"))
         
-#    elif algoritmo == 2:
-#        porPrioridade(leArquivo("prioridades.txt"))
+    #elif algoritmo == 2:
+    #    porPrioridade(leArquivo("exemplos_entradas\\prioridades.txt"))
         
     elif algoritmo == 3:
-        loteria(leArquivo("loteria.txt"))
+        loteria(leArquivo("exemplos_entradas\\loteria.txt"))
 
     else:
         print("valor invalido")
 
 def main():
-    escolheAlgoritmo()
+    t1 = threading.Thread(target=escolheAlgoritmo)  
+    t2 = threading.Thread(target=adicionaNovoProcesso)  
+    t1.start()
+    t2.start()
 
 main()
