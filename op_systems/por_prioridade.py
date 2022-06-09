@@ -1,15 +1,4 @@
-
-
-#Transforma o arquivo em uma lista
-def ler_arq():
-  arq = open('prioridades.txt', 'r')
-  lista = arq.readlines()
-  new_lista =[]
-  for linha in lista:
-    linha = linha.rstrip('\n')
-    new_lista.append(linha)
-  arq = arq.close()
-  return new_lista
+import time
 
 #Encontra o tipo da lista
 def type_alg():
@@ -19,8 +8,8 @@ def type_alg():
   return selection
 
 #lista de listas
-def list_of_list():
-  arq = ler_arq()
+def list_of_list(lista):
+  arq = lista
   arq.pop(0)
   new_list =[]
   tam = len(arq)
@@ -36,47 +25,49 @@ def list_of_list():
   return arq
 
 #organizando por prioridade e por menor tempo
-def org_priority():
-  my_list = list_of_list()
+def org_priority(lista):
+  my_list = list_of_list(lista)
   my_list_sorted = sorted(my_list, key = lambda x:(x[3], x[2]))
   return my_list_sorted
 
-def temp(period):
-    list_sorted = select_priority()
-    print(list_sorted)
-    #for process in list_sorted:
-     #   process[2] -= int(period)
-      #  repre(process)
-       # if process[2] <= 0:
-        #    break
-
 def select_priority():
-    list_sorted = org_priority()
-    first_priority = list_sorted[0][3]
+    global global_list
+    first_priority = global_list[0][3]
     list_element_priority = []
-    for element in list_sorted:
+    for element in global_list:
         if element[3] == first_priority:
-            list_element_priority.append(element)
-            print(list_element_priority)
-            global_list.remove(element)   
+          list_element_priority.append(element)
         else:
-            break
+          break
+    for process in list_element_priority :
+      global_list.remove(process)
     return list_element_priority
+
+def tim(period, list_sorted):
+  while len(list_sorted):
+    time.sleep(1)
+    for process in list_sorted:
+        process[2] -= int(period)
+        repre(process)
+        if process[2] <= 0:
+          list_sorted.remove(process)
 
 def repre(process):
   element_list = process
-  print('Process Number: ' + element_list[0] + ' ID Process: ' +  str(element_list[1]) + 'Period:' + str(element_list[2]))
+  if element_list[2] >= 0:
+    print( ' ID Process: ' +  str(element_list[1]) + ' Priority: ' +  str(element_list[3]) +' Time left: ' + str(element_list[2]))
 
 #função principal
-def main():
-  alg_esc = type_alg()
-  if (alg_esc[0] == 'prioridade'):
+def porPrioridade(lista_de_linhas):
+  minha_lista = list_of_list(lista_de_linhas)
+  if (minha_lista[0] == 'prioridade'):
     period = alg_esc[1]
-    while len(global_list) >= 0:
-        temp(period)
+    while len(global_list) > 0:
+        tim(period, select_priority())
+    print(global_list)
     
 
   
-global_list_aux = org_priority()
+global_list_aux = org_priority(lista)
 global_list = global_list_aux
 main()
