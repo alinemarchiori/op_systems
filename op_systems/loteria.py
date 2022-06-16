@@ -1,80 +1,112 @@
 ############################################################# NÃO ESTÁ PRONTO ############################################################
-
+#falta lista do tempo dos processos 
+#falta função para o input em tempo de execução
 
 import time
 import random
 from classes import *
 
-# variáveis globais
-lista_processos = []
-lista_de_processos_para_mostrar_o_tempo = None
-tempo_total = 0
+ import random
+import time
 
-lista_de_bilhetes = []
-total_de_bilhetes = 0
+nome_do_processo = []
+tempo_de_cada_processo = []
+lista_de_bilhetes_processo = [] #bilhete de cada processo
+cpu=None
 
-# cria um novo processo em tempo de execução, lendo dados do terminal
-def criaProcesso():
-    processo = input()
-    global lista_processos
-    objeto_processo = Processo()
-    objeto_processo.setDetalhesProcesso(processo.split('|'))
-    lista_processos.append(objeto_processo)
-    lista_de_processos_para_mostrar_o_tempo.append(objeto_processo)
+total_de_bilhetes=0
+lista_bilhetes_teto = [] #limite superior 
+lista_de_bilhetes = [] # bilhetes de 1 até n 
 
-# printa quantos processos ainda restam na fila
-def getNumeroProcessosFaltantes():
-    print(f'Processos em espera: {len(lista_processos)}\n')
 
-# organiza os processos em uma lista e instancia a classe para cada processo
-def listaProcessos(lista_linhas):
-    global lista_processos
+def loteria(lista_linhas):
+    global nome_do_processo, tempo_de_cada_processo, lista_de_bilhetes_processo,cpu
+    global total_de_bilhetes, lista_bilhetes_teto,lista_de_bilhetes
+    
+    loteria, cpu = lista_linhas[0].split("|")
+    lista_linhas.remove(lista_linhas[0])
+    cpu = int(cpu)
+    #pegando os dados inceridos
+    for linha in lista_linhas:
+        lista_elementos_do_processo = linha.split("|")
+        nome_do_processo.append(lista_elementos_do_processo[0])
+        tempo_de_cada_processo.append(int(lista_elementos_do_processo[2]))
+        lista_de_bilhetes_processo.append(int(lista_elementos_do_processo[3]))
 
-    for processo in lista_linhas:
-        objeto_processo = Processo()
-        objeto_processo.setDetalhesProcesso(processo.split('|'))
-        lista_processos.append(objeto_processo)
-#lista de bilhetes
+    #total de bilhetes 
+    for i in lista_de_bilhetes_processo:
+        total_de_bilhetes+=i
+    
 
-def bilhetes():
-    global lista_de_bilhetes,total_de_bilhetes 
+    #lista de bilhetes
     if lista_de_bilhetes==None:
-        i=1 #numero do bilhete
+        i=1 
     else:
         i=len(lista_de_bilhetes)+1
     while i<=total_de_bilhetes:
         lista_de_bilhetes.append(i)
         i+=1
-
-#escolhe bilhete
-def escolhe_bilhete():
-    global lista_de_bilhetes
-    escolha = random.randint(0,len(lista_de_bilhetes))
     
-    return lista_de_bilhetes [escolha]
-
-#bilhetes de cada processo
-def bilhetes_de_cada_processo():
-    global total_de_bilhetes
-    contador_de_bilhetes=None
-    lista_bilhetes_por_processo = []
+    #limite superior de cada processo para achar o bilhete
     p = 0 #posição na lista de processos
+    contador_de_bilhetes=None
     while total_de_bilhetes>0:
         if contador_de_bilhetes ==None:
-            contador_de_bilhetes = lista_processos[p].prioridade
+            contador_de_bilhetes = lista_de_bilhetes_processo[p]
         else:
-            contador_de_bilhetes += lista_processos[p].prioridade
-        lista_bilhetes_por_processo.append(contador_de_bilhetes)
-        total_de_bilhetes-=lista_processos[p].prioridade
+            contador_de_bilhetes += lista_de_bilhetes_processo[p]
+        lista_bilhetes_teto.append(contador_de_bilhetes)
+        total_de_bilhetes-=lista_de_bilhetes_processo[p]
         p+=1
-    # pegar a quantidade de bilhetes processo a processo e adicionar na lista acima a partir do contador 
-    # exemplo lista_bilhetes_por_contador =[6,10,15,21]
-    # cada posição é o limite de cada processo, ou seja, limite processo 1 é de 1 até 6, processo 2 é de 7 até 10 e assim sucessivamente
+    
 
-#onde a magica acontece
-def loteria(lista_de_linhas):
-    global lista_processos, tempo_total, lista_de_processos_para_mostrar_o_tempo,lista_de_bilhetes,total_de_bilhetes
-    _, tempo_de_CPU = lista_de_linhas[0].split("|") 
-    lista_de_linhas.remove(lista_de_linhas[0])
-    listaProcessos(lista_de_linhas)
-    lista_de_processos_para_mostrar_o_tempo = lista_processos
+    #definindo processo a ser executado
+    
+    while len(tempo_de_cada_processo)>0:
+        
+        #escolhe bilhete
+        escolha = None
+        escolha = random.randint(0,len(lista_de_bilhetes)-1)
+
+        bilhete = lista_de_bilhetes [escolha]
+        print("Bilhete sorteado: ",bilhete)
+
+        #encontrar o processo a partir do intervalo 
+        contador_de_intervalo = 0 
+        for i in lista_bilhetes_teto:
+            if bilhete > i:
+                contador_de_intervalo+=1
+        print("Nome: ",nome_do_processo[contador_de_intervalo])
+        
+        tempo = tempo_de_cada_processo[contador_de_intervalo]
+        print("Tempo restante: ")
+        if  tempo>0:
+            tempo-=cpu
+            print("Tempo atualizado do processo: ",tempo)
+        tempo_de_cada_processo[contador_de_intervalo] = tempo
+        print("Tempo dos processos restantes: ",tempo_de_cada_processo)
+        print("\n\n")
+        time.sleep(1)
+        if tempo_de_cada_processo[contador_de_intervalo] <=0:
+
+            del(tempo_de_cada_processo[contador_de_intervalo])
+            del(lista_de_bilhetes_processo[contador_de_intervalo])
+            del(lista_bilhetes_teto[contador_de_intervalo])
+            #substiturir pela função total de bilhetes
+            total_de_bilhetes = 0
+            #total de bilhetes 
+            for i in lista_de_bilhetes_processo:
+                total_de_bilhetes+=i
+            
+            lista_de_bilhetes=[]
+            #lista de bilhetes
+            if lista_de_bilhetes==None:
+                i=1 
+            else:
+                i=len(lista_de_bilhetes)+1
+            while i<=total_de_bilhetes:
+                lista_de_bilhetes.append(i)
+                i+=1
+            
+
+
