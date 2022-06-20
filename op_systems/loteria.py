@@ -1,6 +1,5 @@
 ############################################################# NÃO ESTÁ PRONTO ############################################################
-#falta lista do tempo dos processos 
-#falta função para o input em tempo de execução
+#falta testar função para o input em tempo de execução
 
 import random
 import time
@@ -13,11 +12,21 @@ cpu=None
 total_de_bilhetes=0
 lista_bilhetes_teto = [] #limite superior 
 lista_de_bilhetes = [] # bilhetes de 1 até n 
+tempo_decorrido = 0
+Nome= []
+Tempo= []
 
+def criaProcesso():
+    processo = input()
+    global nome_do_processo, tempo_de_cada_processo, lista_de_bilhetes_processo
+    lista_elementos_do_processo = processo.split("|")
+    nome_do_processo.append(lista_elementos_do_processo[0])
+    tempo_de_cada_processo.append(int(lista_elementos_do_processo[2]))
+    lista_de_bilhetes_processo.append(int(lista_elementos_do_processo[3]))
 
 def loteria(lista_linhas):
     global nome_do_processo, tempo_de_cada_processo, lista_de_bilhetes_processo,cpu
-    global total_de_bilhetes, lista_bilhetes_teto,lista_de_bilhetes
+    global total_de_bilhetes, lista_bilhetes_teto,lista_de_bilhetes,tempo_decorrido,Nome,Tempo
     
     loteria, cpu = lista_linhas[0].split("|")
     lista_linhas.remove(lista_linhas[0])
@@ -75,16 +84,19 @@ def loteria(lista_linhas):
         print("Nome: ",nome_do_processo[contador_de_intervalo])
         
         tempo = tempo_de_cada_processo[contador_de_intervalo]
-        print("Tempo restante: ")
+        print("Tempo restante: ", tempo)
+        
         if  tempo>0:
             tempo-=cpu
             print("Tempo atualizado do processo: ",tempo)
+            tempo_decorrido+=cpu
         tempo_de_cada_processo[contador_de_intervalo] = tempo
-        print("Tempo dos processos restantes: ",tempo_de_cada_processo)
+        print("Processos restantes: ",len(tempo_de_cada_processo))
         print("\n\n")
         time.sleep(1)
         if tempo_de_cada_processo[contador_de_intervalo] <=0:
-
+            Nome.append(nome_do_processo[contador_de_intervalo])
+            Tempo.append(tempo_decorrido)
             del(tempo_de_cada_processo[contador_de_intervalo])
             del(lista_de_bilhetes_processo[contador_de_intervalo])
             del(lista_bilhetes_teto[contador_de_intervalo])
@@ -103,6 +115,3 @@ def loteria(lista_linhas):
             while i<=total_de_bilhetes:
                 lista_de_bilhetes.append(i)
                 i+=1
-            
-
-
