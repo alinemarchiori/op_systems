@@ -27,6 +27,10 @@ def escolheAlgoritmo():
         
     elif algoritmo == 3:
         loteria(leArquivo("exemplos_entradas\\loteria.txt"))
+        #mostra o tempo que cada processo deorou para executar 
+        print("Nome do processo // tempo demorado para execução total") 
+        for i in range(len(Nome)):
+            print(Nome[i],"//",Tempo [i])
 
     else:
         print("valor invalido")
