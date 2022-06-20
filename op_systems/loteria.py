@@ -2,11 +2,7 @@
 #falta lista do tempo dos processos 
 #falta função para o input em tempo de execução
 
-import time
 import random
-from classes import *
-
- import random
 import time
 
 nome_do_processo = []
