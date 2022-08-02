@@ -1,7 +1,7 @@
-from alternancia_circular import *
-from por_prioridade import *
-from loteria import *
-from classes import *
+from Escalonador.alternancia_circular import *
+from Escalonador.por_prioridade import *
+from Escalonador.loteria import *
+from Escalonador.classes import *
 import threading 
 
 algoritmo = 0

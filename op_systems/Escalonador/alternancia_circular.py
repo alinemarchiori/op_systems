@@ -1,5 +1,5 @@
 import time
-from classes import *
+from Escalonador.classes import *
 
 # variáveis globais
 lista_processos = []
