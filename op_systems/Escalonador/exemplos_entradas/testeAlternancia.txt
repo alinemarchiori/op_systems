@@ -1,0 +1,17 @@
+alternanciaCircular|4
+processo-16|16|54|36|1|8192
+processo-17|17|30|90|7|6144
+processo-18|18|12|7|8|9216
+processo-19|19|48|38|6|3072
+processo-20|20|54|98|5|9216
+processo-21|21|48|30|5|1024
+processo-22|22|6|23|6|5120
+processo-23|23|30|55|1|5120
+processo-24|24|48|65|2|7168
+processo-25|25|6|79|2|5120
+processo-26|26|54|5|9|2048
+processo-27|27|54|17|2|3072
+processo-28|28|24|77|4|2048
+processo-29|29|48|54|8|3072
+processo-30|30|18|40|1|4096
+processo-31|31|12|2|5|7168
