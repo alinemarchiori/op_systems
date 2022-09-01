@@ -25,12 +25,7 @@ def FIFO_beatriz():
     pass
 
 
-# FALAR PARA O PROFESSOR QUE O ARQUIVO NÃO ESTÁ CERTO (exemplo linha 15)
-''' FIZ A MÃO AS TROCAS da linha 15
-10  +1 +1 +1 +1 +1 +1 +1 +1+1 +1 +1 = 21 #numero de trocas
-     8  3  5  4 15  6 14 13 2 16 1 #processos que queriam entrar
-     3  5 15  7 17 10 16 12 9 11 8 #processos que sairam para o de cima entrar
-'''
+# FALAR PARA O PROFESSOR QUE O ARQUIVO NÃO ESTÁ CERTO, as colunas estão trocadas
 def MRU_aline(linha): 
     quantidade_molduras, quantidade_paginas, referencias = organiza_linha(linha)
     tabela_de_paginas = [Pagina(nome) for nome in range(1, quantidade_paginas + 1)]
