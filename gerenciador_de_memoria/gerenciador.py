@@ -7,16 +7,14 @@ class Pagina:
         self.tempo_final_na_memoria = 0
 
     def set_tempo_inicial(self):
-        self.tempo_inicial_na_memoria = time.process_time()
+        self.tempo_inicial_na_memoria = time.process_time_ns()
 
     def zera_tempo(self):
         self.tempo_inicial_na_memoria = 0
         self.tempo_final_na_memoria = 0
 
-    def aumenta_tempo(self):
-        self.tempo_final_na_memoria += time.process_time()
-
     def get_tempo(self):
+        self.tempo_final_na_memoria = time.process_time_ns()
         return self.tempo_final_na_memoria - self.tempo_inicial_na_memoria
 
     def __repr__(self) -> str:
@@ -27,7 +25,12 @@ def FIFO_beatriz():
     pass
 
 
-# FALAR PARA O PROFESSOR QUE O ARQUIVO NÃO ESTÁ CERTO (LINHAS 5 E 6 DO MRU)
+# FALAR PARA O PROFESSOR QUE O ARQUIVO NÃO ESTÁ CERTO (exemplo linha 15)
+''' FIZ A MÃO AS TROCAS da linha 15
+10  +1 +1 +1 +1 +1 +1 +1 +1+1 +1 +1 = 21 #numero de trocas
+     8  3  5  4 15  6 14 13 2 16 1 #processos que queriam entrar
+     3  5 15  7 17 10 16 12 9 11 8 #processos que sairam para o de cima entrar
+'''
 def MRU_aline(linha): 
     quantidade_molduras, quantidade_paginas, referencias = organiza_linha(linha)
     tabela_de_paginas = [Pagina(nome) for nome in range(1, quantidade_paginas + 1)]
@@ -41,15 +44,12 @@ def MRU_aline(linha):
         
         #verifica se a página já está na memória
         if pagina_em_questao in mapa_de_bits:
-            for pagina in mapa_de_bits:
-                if pagina:
-                    pagina.aumenta_tempo()
+            pass
         
         #se não estiver, verifica se a memória está cheia e insere a página na memória
         elif len(mapa_de_bits) < quantidade_molduras:
             mapa_de_bits.append(pagina_em_questao)
             pagina_em_questao.set_tempo_inicial()
-            pagina_em_questao.aumenta_tempo()
             numero_de_trocas_de_paginas += 1
 
         #caso a memória estiver cheia, é necessário fazer a troca de páginas
@@ -59,16 +59,18 @@ def MRU_aline(linha):
 
             #loop que verifica qual das páginas está a mais tempo na memória e guarda ela
             for pagina in mapa_de_bits:
+                
                 if pagina.get_tempo() > tempo_na_memoria:
                     tempo_na_memoria = pagina.get_tempo()
                     pagina_a_ser_removida = pagina
+                    #print(mapa_de_bits, pagina, pagina.get_tempo(), pagina_em_questao)
             
             #depois de encontrar a página a ser removida, é zerado o tempo dela e 
             #ela é substituída da memória pela página que está sendo referenciada
             pagina_a_ser_removida.zera_tempo()
-            mapa_de_bits.insert(pagina_a_ser_removida.nome, pagina_em_questao)
+            mapa_de_bits.remove(pagina_a_ser_removida)
+            mapa_de_bits.append(pagina_em_questao)
             pagina_em_questao.set_tempo_inicial()
-            pagina_em_questao.aumenta_tempo()
             numero_de_trocas_de_paginas += 1
  
     return numero_de_trocas_de_paginas
@@ -111,7 +113,7 @@ def leArquivo(nomedoarquivo):
 
 
 def main():
-    arquivo =  leArquivo("gerenciador_de_memoria\\arquivos_entrada_e_saida\\inMemoria.txt")
+    arquivo =  leArquivo("gerenciador_de_memoria\\arquivos_entrada_e_saida\\inMemoria1.txt")
 
     for linha in arquivo:
         '''
