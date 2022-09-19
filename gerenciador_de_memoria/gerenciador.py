@@ -1,4 +1,5 @@
 import time
+import os
 
 class Pagina:
     def __init__(self, nome):
@@ -108,7 +109,8 @@ def leArquivo(nomedoarquivo):
 
 
 def main():
-    arquivo =  leArquivo("gerenciador_de_memoria\\arquivos_entrada_e_saida\\inMemoria1.txt")
+    caminho = os.path.join("gerenciador_de_memoria", "arquivos_entrada_e_saida", "inMemoria.txt")
+    arquivo =  leArquivo(caminho)
 
     for linha in arquivo:
         '''
