@@ -6,6 +6,7 @@ class Pagina:
         self.nome = nome
         self.tempo_inicial_na_memoria = 0
         self.tempo_final_na_memoria = 0
+        self.contador = 0
 
     def set_tempo_inicial(self):
         self.tempo_inicial_na_memoria = time.process_time_ns()
@@ -17,6 +18,15 @@ class Pagina:
     def get_tempo(self):
         self.tempo_final_na_memoria = time.process_time_ns()
         return self.tempo_final_na_memoria - self.tempo_inicial_na_memoria
+
+    def incrementa_contador(self):
+        self.contador += 1
+
+    def zera_contador(self):
+        self.contador = 0
+
+    def get_contador(self):
+        return self.contador
 
     def __repr__(self) -> str:
         return f'Pagina: {self.nome}'
