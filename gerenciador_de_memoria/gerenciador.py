@@ -1,3 +1,4 @@
+import math
 import time
 import os
 
@@ -82,8 +83,33 @@ def MRU_aline(linha):
     return numero_de_trocas_de_paginas
 
 
-def NUF_cris():
-    pass
+def NUF_cris(linha):
+    quantidade_molduras, quantidade_paginas, referencias = organiza_linha(linha)
+    tabela_de_paginas = [Pagina(nome) for nome in range(1, quantidade_paginas + 1)]
+    mapa_de_bits = []
+    numero_de_trocas_de_paginas = 0
+
+    for referencia in referencias:
+        tabela_de_paginas[referencia - 1].incrementa_contador()
+        pagina_em_questao = tabela_de_paginas[referencia - 1]
+        pagina_em_questao.incrementa_contador()
+        if pagina_em_questao in mapa_de_bits:
+            pass
+        elif len(mapa_de_bits) < quantidade_molduras:
+            mapa_de_bits.append(pagina_em_questao)
+            numero_de_trocas_de_paginas += 1
+        elif len(mapa_de_bits) >= quantidade_molduras:
+            pagina_a_ser_removida = mapa_de_bits[0]
+            contador = math.inf
+            for pagina in mapa_de_bits:
+                if pagina.get_contador() < contador or (pagina.get_contador() == contador and pagina.nome < pagina_a_ser_removida.nome):
+                    pagina_a_ser_removida = pagina
+                    contador = pagina.get_contador()
+            pagina_a_ser_removida.zera_contador()
+            mapa_de_bits.remove(pagina_a_ser_removida)
+            mapa_de_bits.append(pagina_em_questao)
+            numero_de_trocas_de_paginas += 1
+    return numero_de_trocas_de_paginas
 
 
 def OTIMO_breno():
@@ -133,7 +159,7 @@ def main():
         #apenas para fins de teste
         fifo = 200
         mru = MRU_aline(linha)
-        nuf = 100
+        nuf = NUF_cris(linha)
         otimo = 2
 
         # armazena os resultados em uma lista
