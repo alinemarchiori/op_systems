@@ -22,7 +22,37 @@ class Pagina:
 
 
 def FIFO_beatriz():
-    pass
+
+numero_molduras = 3
+numero_paginas = 8
+ordem_acesso = [1,2,2,2,3,4,3,4,5,5,6,1,3,2,6,7,7,7,8]
+moldura = [None]*numero_molduras
+posicao = 0 
+posicao2 = 0
+trocas = 0
+chave = 0 
+
+while True:
+    
+    if posicao >= numero_molduras:
+        posicao = 0 
+    
+    chave = 0
+    for i in moldura:
+        
+        if i == ordem_acesso[posicao2]:
+            chave+=1
+            
+    if chave == 0:
+        moldura[posicao] = ordem_acesso[posicao2] 
+        posicao+=1
+        trocas +=1
+    posicao2+=1
+
+    
+    if posicao2 >= len(ordem_acesso):
+        break
+print(trocas)    
 
 
 # FALAR PARA O PROFESSOR QUE O ARQUIVO NÃO ESTÁ CERTO, as colunas estão trocadas
