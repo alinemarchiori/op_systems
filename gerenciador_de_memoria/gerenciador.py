@@ -119,19 +119,30 @@ def NUF_cris(linha):
     mapa_de_bits = []
     numero_de_trocas_de_paginas = 0
 
+    #verifica, para cada referencia da lista de referencias, se a página já está na memória.
     for referencia in referencias:
         tabela_de_paginas[referencia - 1].incrementa_contador()
         pagina_em_questao = tabela_de_paginas[referencia - 1]
         pagina_em_questao.incrementa_contador()
+
+        #verifica se a página já está na memória
         if pagina_em_questao in mapa_de_bits:
             pass
+
+        #se não estiver, verifica se a memória está cheia
         elif len(mapa_de_bits) < quantidade_molduras:
             mapa_de_bits.append(pagina_em_questao)
             numero_de_trocas_de_paginas += 1
+
+        #se estiver cheia, é necessário fazer a troca de páginas
         elif len(mapa_de_bits) >= quantidade_molduras:
             pagina_a_ser_removida = mapa_de_bits[0]
             contador = math.inf
+
+            #loop que verifica qual página é a menos frequentemente usada
             for pagina in mapa_de_bits:
+
+                #caso duas páginas estejam "empatadas" no quesito frequencia de uso, escolhe a de menor id (nome)
                 if pagina.get_contador() < contador or (pagina.get_contador() == contador and pagina.nome < pagina_a_ser_removida.nome):
                     pagina_a_ser_removida = pagina
                     contador = pagina.get_contador()
