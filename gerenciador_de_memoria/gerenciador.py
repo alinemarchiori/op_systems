@@ -1,10 +1,15 @@
+import math
+import time
+import os
 tempo = 0
+
 
 class Pagina:
     def __init__(self, nome):
         self.nome = nome
         self.tempo_inicial_na_memoria = 0
         self.tempo_final_na_memoria = 0
+        self.contador = 0
 
     def set_tempo_inicial(self, tempo):
         self.tempo_inicial_na_memoria = tempo
@@ -16,6 +21,15 @@ class Pagina:
     def get_tempo(self, tempo):
         self.tempo_final_na_memoria = tempo
         return self.tempo_final_na_memoria - self.tempo_inicial_na_memoria
+
+    def incrementa_contador(self):
+        self.contador += 1
+
+    def zera_contador(self):
+        self.contador = 0
+
+    def get_contador(self):
+        return self.contador
 
     def __repr__(self) -> str:
         return f'Pagina: {self.nome}'
@@ -99,8 +113,33 @@ def MRU_aline(linha):
     return numero_de_trocas_de_paginas
 
 
-def NUF_cris():
-    pass
+def NUF_cris(linha):
+    quantidade_molduras, quantidade_paginas, referencias = organiza_linha(linha)
+    tabela_de_paginas = [Pagina(nome) for nome in range(1, quantidade_paginas + 1)]
+    mapa_de_bits = []
+    numero_de_trocas_de_paginas = 0
+
+    for referencia in referencias:
+        tabela_de_paginas[referencia - 1].incrementa_contador()
+        pagina_em_questao = tabela_de_paginas[referencia - 1]
+        pagina_em_questao.incrementa_contador()
+        if pagina_em_questao in mapa_de_bits:
+            pass
+        elif len(mapa_de_bits) < quantidade_molduras:
+            mapa_de_bits.append(pagina_em_questao)
+            numero_de_trocas_de_paginas += 1
+        elif len(mapa_de_bits) >= quantidade_molduras:
+            pagina_a_ser_removida = mapa_de_bits[0]
+            contador = math.inf
+            for pagina in mapa_de_bits:
+                if pagina.get_contador() < contador or (pagina.get_contador() == contador and pagina.nome < pagina_a_ser_removida.nome):
+                    pagina_a_ser_removida = pagina
+                    contador = pagina.get_contador()
+            pagina_a_ser_removida.zera_contador()
+            mapa_de_bits.remove(pagina_a_ser_removida)
+            mapa_de_bits.append(pagina_em_questao)
+            numero_de_trocas_de_paginas += 1
+    return numero_de_trocas_de_paginas
 
 
 def OTIMO_breno(linha):
@@ -204,7 +243,8 @@ def leArquivo(nomedoarquivo):
 
 
 def main():
-    arquivo =  leArquivo("arquivos_entrada_e_saida\\inMemoria.txt")
+    caminho = os.path.join("gerenciador_de_memoria", "arquivos_entrada_e_saida", "inMemoria.txt")
+    arquivo =  leArquivo(caminho)
 
     for linha in arquivo:
         '''
@@ -217,7 +257,7 @@ def main():
         #apenas para fins de teste
         fifo = FIFO_beatriz(linha)
         mru = MRU_aline(linha)
-        nuf = 100
+        nuf = NUF_cris(linha)
         otimo = OTIMO_breno(linha)
 
         # armazena os resultados em uma lista
