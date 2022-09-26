@@ -20,7 +20,6 @@ class Pagina:
     def __repr__(self) -> str:
         return f'Pagina: {self.nome}'
 
-
 def FIFO_beatriz(linha):
     numero_molduras, numero_paginas, ordem_acesso = organiza_linha(linha) #pega numero de molduras, paginas e a ordem que são acessadas do arquivo
     moldura = [None]*numero_molduras #lista de molduras
