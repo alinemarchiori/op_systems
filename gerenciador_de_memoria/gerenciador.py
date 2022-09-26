@@ -1,4 +1,4 @@
-import time
+tempo = 0
 
 class Pagina:
     def __init__(self, nome):
@@ -6,31 +6,58 @@ class Pagina:
         self.tempo_inicial_na_memoria = 0
         self.tempo_final_na_memoria = 0
 
-    def set_tempo_inicial(self):
-        self.tempo_inicial_na_memoria = time.process_time_ns()
+    def set_tempo_inicial(self, tempo):
+        self.tempo_inicial_na_memoria = tempo
 
     def zera_tempo(self):
         self.tempo_inicial_na_memoria = 0
         self.tempo_final_na_memoria = 0
 
-    def get_tempo(self):
-        self.tempo_final_na_memoria = time.process_time_ns()
+    def get_tempo(self, tempo):
+        self.tempo_final_na_memoria = tempo
         return self.tempo_final_na_memoria - self.tempo_inicial_na_memoria
 
     def __repr__(self) -> str:
         return f'Pagina: {self.nome}'
 
 
-def FIFO_beatriz():
-    pass
+def FIFO_beatriz(linha):
+    numero_molduras, numero_paginas, ordem_acesso = organiza_linha(linha) #pega numero de molduras, paginas e a ordem que são acessadas do arquivo
+    moldura = [None]*numero_molduras #lista de molduras
+    posicao = 0 #posição na lista de molduras  
+    posicao2 = 0 #posição na lista de paginas 
+    trocas = 0
+    chave = 0 
+
+    while True:
+        
+        if posicao >= numero_molduras: #reseta posição na lista de molduras 
+            posicao = 0 
+        
+        chave = 0
+        for i in moldura:#verifica se a pagina já está na lista de molduras 
+            
+            if i == ordem_acesso[posicao2]:
+                chave+=1
+                
+        if chave == 0:# se não está ela entra na lista de molduras 
+            moldura[posicao] = ordem_acesso[posicao2] 
+            posicao+=1
+            trocas +=1
+        posicao2+=1
+
+        
+        if posicao2 >= len(ordem_acesso): #finaliza o looping quando chega no final da lista de paginas
+            break
+    return trocas
 
 
-# FALAR PARA O PROFESSOR QUE O ARQUIVO NÃO ESTÁ CERTO, as colunas estão trocadas
 def MRU_aline(linha): 
     quantidade_molduras, quantidade_paginas, referencias = organiza_linha(linha)
     tabela_de_paginas = [Pagina(nome) for nome in range(1, quantidade_paginas + 1)]
     mapa_de_bits = []
     numero_de_trocas_de_paginas = 0
+    global tempo
 
     #para cada uma das referencias da lista de referencias é realizada
     #a verificação se a página está ou não na memória
@@ -39,12 +66,12 @@ def MRU_aline(linha):
         
         #verifica se a página já está na memória
         if pagina_em_questao in mapa_de_bits:
-            pass
+            pagina_em_questao.set_tempo_inicial(tempo)
         
         #se não estiver, verifica se a memória está cheia e insere a página na memória
         elif len(mapa_de_bits) < quantidade_molduras:
             mapa_de_bits.append(pagina_em_questao)
-            pagina_em_questao.set_tempo_inicial()
+            pagina_em_questao.set_tempo_inicial(tempo)
             numero_de_trocas_de_paginas += 1
 
         #caso a memória estiver cheia, é necessário fazer a troca de páginas
@@ -55,8 +82,8 @@ def MRU_aline(linha):
             #loop que verifica qual das páginas está a mais tempo na memória e guarda ela
             for pagina in mapa_de_bits:
                 
-                if pagina.get_tempo() > tempo_na_memoria:
-                    tempo_na_memoria = pagina.get_tempo()
+                if pagina.get_tempo(tempo) > tempo_na_memoria:
+                    tempo_na_memoria = pagina.get_tempo(tempo)
                     pagina_a_ser_removida = pagina
                     #print(mapa_de_bits, pagina, pagina.get_tempo(), pagina_em_questao)
             
@@ -65,8 +92,10 @@ def MRU_aline(linha):
             pagina_a_ser_removida.zera_tempo()
             mapa_de_bits.remove(pagina_a_ser_removida)
             mapa_de_bits.append(pagina_em_questao)
-            pagina_em_questao.set_tempo_inicial()
+            pagina_em_questao.set_tempo_inicial(tempo)
             numero_de_trocas_de_paginas += 1
+
+        tempo += 1
  
     return numero_de_trocas_de_paginas
 
@@ -108,7 +137,7 @@ def leArquivo(nomedoarquivo):
 
 
 def main():
-    arquivo =  leArquivo("gerenciador_de_memoria\\arquivos_entrada_e_saida\\inMemoria1.txt")
+    arquivo =  leArquivo("arquivos_entrada_e_saida\\inMemoria.txt")
 
     for linha in arquivo:
         '''
@@ -119,9 +148,9 @@ def main():
         otimo = OTIMO_breno()
         '''
         #apenas para fins de teste
-        fifo = 200
+        fifo = FIFO_beatriz(linha)
         mru = MRU_aline(linha)
-        nuf = 100
+        nuf = 2
         otimo = 2
 
         # armazena os resultados em uma lista
