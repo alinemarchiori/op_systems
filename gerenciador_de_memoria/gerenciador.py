@@ -1,6 +1,8 @@
 import math
 import time
 import os
+tempo = 0
+
 
 class Pagina:
     def __init__(self, nome):
@@ -9,15 +11,15 @@ class Pagina:
         self.tempo_final_na_memoria = 0
         self.contador = 0
 
-    def set_tempo_inicial(self):
-        self.tempo_inicial_na_memoria = time.process_time_ns()
+    def set_tempo_inicial(self, tempo):
+        self.tempo_inicial_na_memoria = tempo
 
     def zera_tempo(self):
         self.tempo_inicial_na_memoria = 0
         self.tempo_final_na_memoria = 0
 
-    def get_tempo(self):
-        self.tempo_final_na_memoria = time.process_time_ns()
+    def get_tempo(self, tempo):
+        self.tempo_final_na_memoria = tempo
         return self.tempo_final_na_memoria - self.tempo_inicial_na_memoria
 
     def incrementa_contador(self):
@@ -32,17 +34,43 @@ class Pagina:
     def __repr__(self) -> str:
         return f'Pagina: {self.nome}'
 
+def FIFO_beatriz(linha):
+    numero_molduras, numero_paginas, ordem_acesso = organiza_linha(linha) #pega numero de molduras, paginas e a ordem que são acessadas do arquivo
+    moldura = [None]*numero_molduras #lista de molduras
+    posicao = 0 #posição na lista de molduras  
+    posicao2 = 0 #posição na lista de paginas 
+    trocas = 0
+    chave = 0 
 
-def FIFO_beatriz():
-    pass
+    while True:
+        
+        if posicao >= numero_molduras: #reseta posição na lista de molduras 
+            posicao = 0 
+        
+        chave = 0
+        for i in moldura:#verifica se a pagina já está na lista de molduras 
+            
+            if i == ordem_acesso[posicao2]:
+                chave+=1
+                
+        if chave == 0:# se não está ela entra na lista de molduras 
+            moldura[posicao] = ordem_acesso[posicao2] 
+            posicao+=1
+            trocas +=1
+        posicao2+=1
+
+        
+        if posicao2 >= len(ordem_acesso): #finaliza o looping quando chega no final da lista de paginas
+            break
+    return trocas
 
 
-# FALAR PARA O PROFESSOR QUE O ARQUIVO NÃO ESTÁ CERTO, as colunas estão trocadas
 def MRU_aline(linha): 
     quantidade_molduras, quantidade_paginas, referencias = organiza_linha(linha)
     tabela_de_paginas = [Pagina(nome) for nome in range(1, quantidade_paginas + 1)]
     mapa_de_bits = []
     numero_de_trocas_de_paginas = 0
+    global tempo
 
     #para cada uma das referencias da lista de referencias é realizada
     #a verificação se a página está ou não na memória
@@ -51,12 +79,12 @@ def MRU_aline(linha):
         
         #verifica se a página já está na memória
         if pagina_em_questao in mapa_de_bits:
-            pass
+            pagina_em_questao.set_tempo_inicial(tempo)
         
         #se não estiver, verifica se a memória está cheia e insere a página na memória
         elif len(mapa_de_bits) < quantidade_molduras:
             mapa_de_bits.append(pagina_em_questao)
-            pagina_em_questao.set_tempo_inicial()
+            pagina_em_questao.set_tempo_inicial(tempo)
             numero_de_trocas_de_paginas += 1
 
         #caso a memória estiver cheia, é necessário fazer a troca de páginas
@@ -67,8 +95,8 @@ def MRU_aline(linha):
             #loop que verifica qual das páginas está a mais tempo na memória e guarda ela
             for pagina in mapa_de_bits:
                 
-                if pagina.get_tempo() > tempo_na_memoria:
-                    tempo_na_memoria = pagina.get_tempo()
+                if pagina.get_tempo(tempo) > tempo_na_memoria:
+                    tempo_na_memoria = pagina.get_tempo(tempo)
                     pagina_a_ser_removida = pagina
                     #print(mapa_de_bits, pagina, pagina.get_tempo(), pagina_em_questao)
             
@@ -77,8 +105,10 @@ def MRU_aline(linha):
             pagina_a_ser_removida.zera_tempo()
             mapa_de_bits.remove(pagina_a_ser_removida)
             mapa_de_bits.append(pagina_em_questao)
-            pagina_em_questao.set_tempo_inicial()
+            pagina_em_questao.set_tempo_inicial(tempo)
             numero_de_trocas_de_paginas += 1
+
+        tempo += 1
  
     return numero_de_trocas_de_paginas
 
@@ -112,8 +142,76 @@ def NUF_cris(linha):
     return numero_de_trocas_de_paginas
 
 
-def OTIMO_breno():
-    pass
+def OTIMO_breno(linha):
+  #Função para zerar páginas já usadas 
+  def zera_elemento(pagina):
+    pag = tabela_paginas.index(pagina)
+    tabela_paginas[pag] = 0
+    return
+
+  #Função para retornar a pagina mais distante
+  def encontra_pagina_distante(tabela_de_molduras, tabela_paginas):
+        maior_tempo_e_pagina = [0,0]
+        #Loop para encontrar a página que será usada daqui mais tempo
+        for Mold_pagina in tabela_de_molduras:
+          contador = 0
+          if (Mold_pagina not in tabela_paginas):
+              maior_tempo_e_pagina[1] = Mold_pagina
+              return maior_tempo_e_pagina[1]
+          for Pag_pagina in tabela_paginas:
+            if (Pag_pagina == 0):
+              contador = 0
+            else:
+              contador += 1
+              if (Mold_pagina == Pag_pagina):
+                if (contador > maior_tempo_e_pagina[0]):
+                  maior_tempo_e_pagina[0] = contador - 1
+                  maior_tempo_e_pagina[1] = Mold_pagina
+                  break
+                else:
+                  break
+       
+        return maior_tempo_e_pagina[1]
+
+  quantidade_molduras, quantidade_paginas, tabela_paginas = organiza_linha(linha)
+  tabela_de_molduras = [ 0 for pagina in range(1, quantidade_molduras + 1)]
+  trocas = 0
+
+  for pagina in tabela_paginas:
+
+    #Verifica se existe espaço vazio na memória
+    if (0 in tabela_de_molduras):
+      #Se existir, e a página ainda não está na memória, inclui a página na memória e incrementa a troca
+      #Zera as páginas que já foram para a memória
+      if (pagina not in tabela_de_molduras):
+        for index in range(len(tabela_de_molduras)):
+          if (tabela_de_molduras[index] == 0):
+            tabela_de_molduras[index] = pagina
+            zera_elemento(pagina)
+            trocas += 1 
+            break 
+          else:
+            pass
+      #Se existir, mas a página já está na memória, zera na lista de páginas
+      else:
+        zera_elemento(pagina)
+    
+    #Se não existir espaço vazio, verifica se a página já está na memória
+    else:
+      #Se já estiver, zera na lista de páginas
+      if (pagina in tabela_de_molduras):
+        zera_elemento(pagina)
+
+      #Se não estiver, haverá a troca
+      else:
+        melhor_substituicao = encontra_pagina_distante(tabela_de_molduras, tabela_paginas)
+        index_troca = tabela_de_molduras.index(melhor_substituicao)
+        tabela_de_molduras[index_troca] = pagina
+        trocas += 1
+        zera_elemento(pagina)
+
+  return trocas
+
 
 
 #recebe uma linha em string e retorna a quantidade de molduras, quantidade de paginas 
@@ -157,10 +255,10 @@ def main():
         otimo = OTIMO_breno()
         '''
         #apenas para fins de teste
-        fifo = 200
+        fifo = FIFO_beatriz(linha)
         mru = MRU_aline(linha)
         nuf = NUF_cris(linha)
-        otimo = 2
+        otimo = OTIMO_breno(linha)
 
         # armazena os resultados em uma lista
         lista_trocas_por_processo = [fifo, mru, nuf, otimo]
