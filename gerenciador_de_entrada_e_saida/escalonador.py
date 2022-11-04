@@ -17,8 +17,8 @@ def leArquivo(nomedoarquivo):
         
 
 def main():
-    
+    pass
     lista_processoss = alternanciaCircular(leArquivo("C:\\Users\\aline\\Documents\\repositorios\\op_sistems_clone\\gerenciador_de_entrada_e_saida\\alternancia.txt"))
     mostraEstatisticas(lista_processoss)
 
-main()
+#main()

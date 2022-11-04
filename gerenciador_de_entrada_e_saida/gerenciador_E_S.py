@@ -12,6 +12,7 @@ class Dispositivo:
         self.num_usos_simultaneos = num_usos_simultaneos
         self.tempo_operacao = tempo_operacao
         self.thread = Thread(target=self._on_run)
+        print(type(self.num_usos_simultaneos))
         self.semmaphore = Semaphore(self.num_usos_simultaneos)
 
     def _on_run(self):
@@ -21,22 +22,33 @@ class Dispositivo:
 def main():
     linhas_do_arquivo = leArquivo("nomedoarquivo.txt")
     tempo_de_cpu, num_de_dispositivos = linhas_do_arquivo[0].split("|")
+    lista_de_processos = [linhas_do_arquivo[0]]
     
     for linha_do_arquivo in range(1,(int(num_de_dispositivos)+1)):
-        linha_separada = linha_do_arquivo.split("|")
+        linha_separada = linhas_do_arquivo[linha_do_arquivo].split("|")
         id = linha_separada[0]
-        num_usos_simultaneos = linha_separada[1]
-        tempo_operacao = linha_separada[2]
+        num_usos_simultaneos = int(linha_separada[1])
+        tempo_operacao = int(linha_separada[2])
         lista_de_dispositivos.append(Dispositivo(id, num_usos_simultaneos, tempo_operacao))
     
-    processo_em_execucao = alternanciaCircular()
+    for linha_do_arquivo in range((int(num_de_dispositivos)+1), len(linhas_do_arquivo)):
+        lista_de_processos.append(linhas_do_arquivo[linha_do_arquivo])
+
+    processo_em_execucao = alternanciaCircular(lista_de_processos)
+    #print(next(processo_em_execucao))
+    #print(next(processo_em_execucao))
+    for i in range(len(lista_de_processos)):
+        proximo = next(processo_em_execucao)
+        print(proximo)
+
     chance_de_requisitar = 80#TODO: pegar esse valor do arquivo
     chance_de_requisitar = chance_de_requisitar/100
     if random.random() < chance_de_requisitar:
         #TODO: botar o processo como bloqueado, e sortear o dispositivo e momento que ele deve ser executado.
         pass
     else:
-        alternanciaCircular()
+        pass
+        #alternanciaCircular()
 
 
 # lê arquivo
@@ -77,3 +89,5 @@ fazer_entrada_e_saida():
 # controlar o tempo de cada processo (executando e fazendo E/S)
 # atualizar lista de bloqueado e pronto
 # 
+if __name__ == '__main__':
+    main()
