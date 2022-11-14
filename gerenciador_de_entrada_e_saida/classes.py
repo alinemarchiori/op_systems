@@ -1,4 +1,6 @@
 import random
+from threading import Thread, Semaphore, Lock
+import time
 
 # Esse arquivo guarda uma classe que é usada em dois
 # algoritmos o por prioridade e o alternância circular
@@ -16,6 +18,7 @@ class Processo:
     #Esse método apenas altera os valores das variáveis
     #recebe uma lista de strings e coloca cada uma no seu lugar
     def setDetalhesProcesso(self, processo):
+        #print(processo)
         self.nome_processo = processo[0]
         self.tempo_execucao = int(processo[1])
         self.id_chance_de_requisitar_e_s = int(processo[2])
@@ -27,6 +30,9 @@ class Processo:
 
     def liberaDispositivo(self):
         self.dispositivo = None
+
+    def fazEntradaSaida(self):
+        self.dispositivo.fazEntradaSaida()
 
     #esse método recebe o tempo de cpu e a cada vez que é
     #chamado diminui esse tempo de cpu do tempo de execução inicial
@@ -60,3 +66,21 @@ class Processo:
     #uma referência de memória e retornar uma string com alguns detalhes importantes
     def __repr__(self) -> str:
         return f'Processo em execucao: {self.nome_processo}\nTempo restante: {self.tempo_execucao}\nPrioridade: {self.prioridade}\n'
+
+class Dispositivo:
+    def __init__(self, id, num_usos_simultaneos, tempo_operacao):
+        self.id = id
+        self.num_usos_simultaneos = num_usos_simultaneos
+        self.tempo_operacao = tempo_operacao
+        self.thread = Thread(target=self._on_run)
+        #print(type(self.num_usos_simultaneos))
+        self.semmaphore = Semaphore(self.num_usos_simultaneos)
+
+    def fazEntradaSaida(self):
+        self.thread.start()
+
+    def _on_run(self):
+        while True:
+            self.semmaphore.acquire()
+            time.sleep(self.tempo_operacao)
+            self.semmaphore.release()

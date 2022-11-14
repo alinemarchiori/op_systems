@@ -12,7 +12,7 @@ class Dispositivo:
         self.num_usos_simultaneos = num_usos_simultaneos
         self.tempo_operacao = tempo_operacao
         self.thread = Thread(target=self._on_run)
-        print(type(self.num_usos_simultaneos))
+        #print(type(self.num_usos_simultaneos))
         self.semmaphore = Semaphore(self.num_usos_simultaneos)
 
     def _on_run(self):
