@@ -31,8 +31,8 @@ class Processo:
     def liberaDispositivo(self):
         self.dispositivo = None
 
-    def fazEntradaSaida(self):
-        self.dispositivo.fazEntradaSaida()
+    def fazEntradaSaida(self, callback):
+        self.dispositivo.fazEntradaSaida(callback)
 
     #esse método recebe o tempo de cpu e a cada vez que é
     #chamado diminui esse tempo de cpu do tempo de execução inicial
@@ -65,22 +65,31 @@ class Processo:
     #serve para quando dar print no objeto ele não retornar 
     #uma referência de memória e retornar uma string com alguns detalhes importantes
     def __repr__(self) -> str:
-        return f'Processo em execucao: {self.nome_processo}\nTempo restante: {self.tempo_execucao}\nPrioridade: {self.prioridade}\n'
+        return f'Processo em execucao: {self.nome_processo}\nTempo que demorou para executar: {self.tempo_que_demorou_para_executar}\n'
 
 class Dispositivo:
     def __init__(self, id, num_usos_simultaneos, tempo_operacao):
         self.id = id
         self.num_usos_simultaneos = num_usos_simultaneos
         self.tempo_operacao = tempo_operacao
-        self.thread = Thread(target=self._on_run)
+        self.tempo_que_demorou_para_operar = 0
         #print(type(self.num_usos_simultaneos))
         self.semmaphore = Semaphore(self.num_usos_simultaneos)
+        
+    #esse método recebe o tempo de cpu e a cada vez que é
+    #chamado diminui esse tempo de cpu do tempo de execução inicial
+    def atualizaTempo(self, tempo_CPU):
+        self.tempo_operacao -= tempo_CPU
 
-    def fazEntradaSaida(self):
-        self.thread.start()
+    #esse método apenas retorna o tempo de execução restante
+    def getTempo(self):
+        return self.tempo_operacao
+    
+    #método que vai alterando o tempo total que o processo demorou
+    #pra terminar
+    def atualizaTempoDemorado(self, tempo_atual):
+        self.tempo_que_demorou_para_operar += tempo_atual
 
-    def _on_run(self):
-        while True:
-            self.semmaphore.acquire()
-            time.sleep(self.tempo_operacao)
-            self.semmaphore.release()
+    def fazEntradaSaida(self, callback):
+        thread = Thread(target=callback)
+        thread.start()

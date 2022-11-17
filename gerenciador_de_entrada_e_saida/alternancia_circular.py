@@ -59,13 +59,8 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
     for linha_do_arquivo in range((int(num_de_dispositivos)+1), len(linhas_do_arquivo)):
         lista_de_processos.append(linhas_do_arquivo[linha_do_arquivo])
 
-    chance_de_requisitar = 80#TODO: pegar esse valor do arquivo
-    chance_de_requisitar = chance_de_requisitar/100
-    '''if random.random() < chance_de_requisitar:
-        #TODO: botar o processo como bloqueado, e sortear o dispositivo e momento que ele deve ser executado.
-        pass
-    else:
-        alternanciaCircular()'''
+    #chance_de_requisitar = 80#TODO: pegar esse valor do arquivo
+    #chance_de_requisitar = chance_de_requisitar/100
 
 
     #loop que serve para executar um processo mesmo que os outros já tenham acabado
@@ -76,11 +71,21 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
             #loop que executa em ordem de criação dos processos
             for processo in lista_processos:
                 tempo_total += int(tempo_de_CPU)
+                for dispositivo in lista_de_dispositivos:
+                    dispositivo.atualizaTempoDemorado(tempo_total)
+                    dispositivo.atualizaTempo(int(tempo_de_CPU))
                 if processo.escolhe():
                     processo.escolheDispositivo(lista_de_dispositivos)
                     lista_processos.remove(processo) #TODO: lembrar de colocar o processo de volta depois que executar entrada e saida
                     lista_processos_bloqueados.append(processo)
-                    processo.fazEntradaSaida()
+                    def callback():
+                        processo.dispositivo.semmaphore.acquire()
+                        while processo.dispositivo.tempo_que_demorou_para_operar < processo.dispositivo.tempo_operacao:
+                            pass
+                        lista_processos.append(processo)
+                        lista_processos_bloqueados.remove(processo)
+                        processo.dispositivo.semmaphore.release()
+                    processo.fazEntradaSaida(callback)
                 else:
                     processo.atualizaTempoDemorado(tempo_total)
                     processo.atualizaTempo(int(tempo_de_CPU))
@@ -90,9 +95,11 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
                     if processo.getTempo() <= 0:
                         lista_processos.remove(processo)
                 getNumeroProcessosFaltantes()
+            print('---------')
+            for processo in lista_processos:
+                print(processo)
         else:
-            for dispositivo in lista_de_dispositivos:
-                dispositivo.thread.join()
+            lista_de_dispositivos.clear()
             break
     
     return lista_de_processos_para_mostrar_o_tempo
@@ -112,7 +119,10 @@ if __name__ == '__main__':
     
     for linha_do_arquivo in range((int(num_de_dispositivos)+1), len(linhas_do_arquivo)):
         lista_de_processos.append(linhas_do_arquivo[linha_do_arquivo])
-    alternanciaCircular(lista_de_processos, tempo_de_CPU=tempo_de_cpu)
+    processos_para_mostrar_o_tempo = alternanciaCircular(lista_de_processos, tempo_de_CPU=tempo_de_cpu)
+    print('---------')
+    for processo in processos_para_mostrar_o_tempo:
+        print(processo)
     exit()
     processo_em_execucao = alternanciaCircular(lista_de_processos)
     #print(next(processo_em_execucao))
@@ -121,8 +131,8 @@ if __name__ == '__main__':
         proximo = next(processo_em_execucao)
         #print(proximo)
 
-    chance_de_requisitar = 80#TODO: pegar esse valor do arquivo
-    chance_de_requisitar = chance_de_requisitar/100
+    #chance_de_requisitar = 80#TODO: pegar esse valor do arquivo
+    #chance_de_requisitar = chance_de_requisitar/100
     if random.random() < chance_de_requisitar:
         #TODO: botar o processo como bloqueado, e sortear o dispositivo e momento que ele deve ser executado.
         pass
