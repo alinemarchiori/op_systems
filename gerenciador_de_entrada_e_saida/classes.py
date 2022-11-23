@@ -27,6 +27,7 @@ class Processo:
 
     def escolheDispositivo(self, lista_dispositivos):
         self.dispositivo = random.choice(lista_dispositivos)
+        assert self.dispositivo != None
 
     def liberaDispositivo(self):
         self.dispositivo = None
@@ -61,11 +62,12 @@ class Processo:
     def escolhe(self):
         chance_de_requisitar = self.id_chance_de_requisitar_e_s
         chance_de_requisitar = chance_de_requisitar/100
-        return random.random() < chance_de_requisitar #TODO: acho que precisa de um intervalo de numeros
+        return random.random() < chance_de_requisitar
+
     #serve para quando dar print no objeto ele não retornar 
     #uma referência de memória e retornar uma string com alguns detalhes importantes
     def __repr__(self) -> str:
-        return f'Processo em execucao: {self.nome_processo}\nTempo que demorou para executar: {self.tempo_que_demorou_para_executar}\n'
+        return f'{self.nome_processo}, Tempo restante: {self.tempo_execucao}'
 
 class Dispositivo:
     def __init__(self, id, num_usos_simultaneos, tempo_operacao):
@@ -73,7 +75,7 @@ class Dispositivo:
         self.num_usos_simultaneos = num_usos_simultaneos
         self.tempo_operacao = tempo_operacao
         self.tempo_que_demorou_para_operar = 0
-        #print(type(self.num_usos_simultaneos))
+        self.numero_de_processos_usando = []
         self.semmaphore = Semaphore(self.num_usos_simultaneos)
         
     #esse método recebe o tempo de cpu e a cada vez que é
@@ -92,4 +94,7 @@ class Dispositivo:
 
     def fazEntradaSaida(self, callback):
         thread = Thread(target=callback)
-        thread.start()
+        thread.run()
+
+    def __repr__(self) -> str:
+        return f'{self.id}'
