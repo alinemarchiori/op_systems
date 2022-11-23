@@ -87,6 +87,8 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
         if len(lista_processos) > 0:
             #loop que executa em ordem de criação dos processos
             for processo in lista_processos:
+                mostraEstados(processo)
+                time.sleep(1)
                 tempo_total += int(tempo_de_CPU)
 
                 for dispositivo in lista_de_dispositivos:
@@ -104,7 +106,7 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
                         
                         if processo.dispositivo:
                             while processo.dispositivo.tempo_que_demorou_para_operar <= processo.dispositivo.tempo_operacao:
-                                mostraEstados(processo)
+                                #mostraEstados(processo)
                                 pass
                             lista_processos.append(processo)
                             lista_processos_bloqueados.remove(processo)
