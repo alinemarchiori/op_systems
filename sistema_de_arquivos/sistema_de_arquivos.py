@@ -25,7 +25,7 @@ class Diretorios:
         self.diretorio_anterior = anterior
   
 class SistemadeArquivos:
-    def __init__(self) -> None:
+    def __init__(self, tamanho_do_bloco) -> None:
         pass
 
     def criaPasta(self):
@@ -37,18 +37,31 @@ class SistemadeArquivos:
 
 def main():
 
-    diretorio_atual = Diretorios
+    diretorio_atual = Diretorios()
+    diretorio_atual.criaDiretorio("/", None)
+    inode_raiz = Inode()
+    inode_raiz.nome_arquivo = diretorio_atual.nome
+    inodes = []
+    inodes.append(inode_raiz)
 
     while True:
         comando = input()#TODO: fazer ele printar o diretorio atual
-
+        comando_separado = comando.split(' ')
         # comandos sobre arquivos
         # Criar arquivo (touch arquivo)
         if comando.startswith("touch"):
-            pass
+            nome_arquivo = comando_separado[1]
+            inode = Inode()
+            inode.nome_arquivo = nome_arquivo
+            inode.diretorio = diretorio_atual
+            inodes.append(inode)
+
         # Remover arquivo (rm arquivo)
         elif comando.startswith("rm"):
-            pass
+            nome_arquivo = comando_separado[1]
+            for inode in inodes:
+                pass
+            
         # Escrever no arquivo (echo "conteudo legal" >> arquivo)
         elif comando.startswith("echo"):
             pass
