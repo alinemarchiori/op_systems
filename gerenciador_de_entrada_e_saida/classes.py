@@ -90,6 +90,8 @@ class Dispositivo:
         self.tempo_que_demorou_para_operar += tempo_atual
 
     def fazEntradaSaida(self, callback):
+        #TODO: Sugestão: Tirar a Thread aqui de dentro
+        #TODO: Criar uma lista de Thread e cada Thread cria um, unico, dispositivo
         thread = Thread(target=callback)
         thread.run()
 
