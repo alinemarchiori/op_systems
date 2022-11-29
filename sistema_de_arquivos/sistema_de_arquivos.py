@@ -42,7 +42,7 @@ def main():
     inode_raiz = Inode()
     inode_raiz.nome_arquivo = diretorio_atual.nome
     inodes = []
-    inodes.append(inode_raiz)
+    
 
     while True:
         comando = input()#TODO: fazer ele printar o diretorio atual
@@ -57,10 +57,10 @@ def main():
             inodes.append(inode)
 
         # Remover arquivo (rm arquivo)
-        elif comando.startswith("rm"):
-            nome_arquivo = comando_separado[1]
-            for inode in inodes:
-                pass
+        #elif comando.startswith("rm"):
+            #nome_arquivo = comando_separado[1]
+            #for inode in inodes:
+             #   pass
             
         # Escrever no arquivo (echo "conteudo legal" >> arquivo)
         elif comando.startswith("echo"):
@@ -72,16 +72,23 @@ def main():
         elif comando.startswith("cp"):
             pass
         # Renomear arquivo (mv arquivo1 arquivo2)
-        elif comando.startswith("mv"):
-            pass
+        #elif comando.startswith("mv"):
+            #pass
         
         # comandos sobre diretorios
         # Criar diretório (mkdir diretorio)
         elif comando.startswith("mkdir"):
             pass
         # Remover diretório (rmdir diretorio) - só funciona se diretório estiver vazio
-        elif comando.startswith("rmdir"):
-            pass
+        elif comando_separado[0] == ('rmdir'):
+            nome_remover_diretorio = comando_separado[1]
+            #TODO: verifica se o diretório existe.
+            for inode in inodes:
+                if inode.nome_arquivo == nome_remover_diretorio:
+                #TODO: verifica se o diretório está vazio.
+                    if inode.tamanho > 0: #Ou a quantidade de blocos for 0
+                        #TODO: remover diretório.              
+
         # Listar o conteúdo de um diretório (ls diretório)
         elif comando.startswith("ls"):
             pass
@@ -89,8 +96,12 @@ def main():
         elif comando.startswith("cd"):
             pass
         # Renomear diretorio (mv diretorio1 diretorio2) 
-        elif comando.startswith("mv"):
-            pass
+        elif comando_separado[0] == ("mv"):
+            nome_diretorio1 = comando_separado[1]
+             #TODO: verifica se o diretório existe.
+                for inode in inodes:
+                    if inode.nome_arquivo == nome_diretorio1:
+                        inode.nome_arquivo = comando_separado[2]
 
 
 main()
