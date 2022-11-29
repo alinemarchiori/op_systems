@@ -40,7 +40,7 @@ def main():
     while True:
         #print(str(diretorio_raiz.nome_atual)+'> ', end='')
         nome_do_diretorio_atual += atual.nome_atual
-        comando = input(str(nome_do_diretorio_atual))
+        comando = input(str(atual.nome_atual))
         comando_separado = comando.split(' ')
         
         # comandos sobre arquivos
