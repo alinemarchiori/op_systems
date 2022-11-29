@@ -4,7 +4,6 @@ from classes import *
 #AS THREADS NÂO ESTÂO FUNCIONANDO CORRETAMENTE
 
 # tabela de processos -> PRONTOS E BLOQUEADOS
-lista_processos_prontos = []
 lista_processos_bloqueados = []
 lista_de_dispositivos = []
 
