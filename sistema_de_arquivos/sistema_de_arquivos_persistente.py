@@ -5,13 +5,20 @@ from datetime import datetime
 
 user = ''
 
-# no dicionario abaixo são guardados os inodes,
+# no dicionario abaixo são guardados os inodes e os blocos,
 # cada inode gasta 2 KB de memória, e o sistema
-# reserva espaço para 10000 inodes
+# reserva espaço para 2500 inodes e 62500 blocos de 4 KB
 gerenciamento_inodes = {}
 gerenciamento_blocos = {} 
-tabela_inodes_e_blocos_livres_ocupados = []
 
+# A ideia por trás do dicionário é ter a chave dos blocos e dos inodes
+# sendo o endereço deles na memória, as posições começam 
+# no zero e vão até o final da quantidade de memória disponível, 
+# facilitando o acesso e a busca tendo uma complexidade constante
+
+# nesta lista são armazenadas as informações de quais blocos 
+# estão livres e quais estão ocupados, sendo uma matriz de zeros e uns
+tabela_inodes_e_blocos_livres_ocupados = []
 
 # quanto de arquivo cabe em cada inode?
 # 2264 KB ou 2264000 bytes ou 566 endereços
@@ -40,20 +47,28 @@ Permissões de acesso ...................-> 50 caracteres  -> 50 bytes
 TOTAL DO INODE por enquanto...............................-> 300 bytes
 
 Sobraram 1700 bytes 
-Se usar 3 caracteres para endereçar 566 endereços de blocos ou outros inodes
-Equivalendo a um arquivo de 2264 Kb ou 2264000 bytes 
+Se usar um inteiro para endereçar 425 endereços de blocos ou outros inodes
+Equivalendo a um arquivo de 1700 Kb ou 1700000 bytes 
                         OU 
-Equivalendo a um diretório que aponta para 566 inodes(diretorios/arquivos)
+Equivalendo a um diretório que aponta para 425 inodes(diretorios/arquivos)
 
 # Se for DIRETÓRIO
 Apontadores para blocos ................-> 0 KB
-Apontador para eventual outro i-node ...-> 2264 Kb
+Apontador para eventual outro i-node ...-> 1700 KB
 
 # Se for arquivo
 Apontadores para blocos ................-> definir conforme o uso
 Apontador para eventual outro i-node ...-> definir conforme o uso
 
-TOTAL DO INODE ...........................................-> 2000 bytes
+TOTAL DO INODE ...........................................-> 2000 bytes = 2 KB
+'''
+
+# TAREFAS
+'''
+- Fazer a tabela de gerenciamento de inodes e blocos
+- Fazer a criação dos inodes e manipulação de informações
+- Fazer a parte de gerenciamento dos inodes em 'memória'
+- Fazer a parte de criação e armazenamento dos blocos 
 '''
 
 def calcula_tamanho(string = str) -> int:
@@ -71,6 +86,7 @@ def inode(
         else:
             print('Erro : O Diretório ' + nome + ' já existe')
     else:
+        tamanho = calcula_tamanho("")
         if nome.endswith('.txt'):
             gerenciamento_inodes[nome] = [caminho, user, None, data_de_criacao, data_de_modificacao, None, tamanho, []]
         else:
