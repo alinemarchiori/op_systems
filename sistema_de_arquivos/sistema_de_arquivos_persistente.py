@@ -88,7 +88,7 @@ TOTAL DO INODE ...........................................-> 2000 bytes = 2 KB
 
 USER = ''
 TABELA = Tabela()
-caminho_atual_str = 'raiz/'
+caminho_atual_str = 'home/'
 caminho_endereco = 0
 caminho_memoria_diretorio_atual = 0
 
@@ -184,14 +184,14 @@ def inicia_sistema_do_zero():
     cria_inodes_blocos()
 
     data_de_criacao, data_de_modificacao = data_hora_atual()
-    caminho_atual_str = 'raiz/' # caminho até o arquivo
+    caminho_atual_str = 'home/' # caminho até o arquivo
     caminho_endereco = 0        # endereco na memoria onde o diretorio atual está
     caminho_memoria_diretorio_atual = 0
     TABELA.setOcupado(0)
 
     add_info_inode(
         caminho_endereco, 
-        'raiz',
+        'home',
         caminho_atual_str, 
         data_de_criacao, 
         data_de_modificacao
@@ -202,6 +202,7 @@ def add_endereco_no_diretorio(endereco_arquivo_ou_diretorio):
     global gerenciamento_inodes
     conteudo_inode = gerenciamento_inodes[caminho_memoria_diretorio_atual]
     conteudo_inode[-1].append(endereco_arquivo_ou_diretorio)
+    print(conteudo_inode[-1])
 
 
 def desaloca_inode(endereco_inode):
@@ -246,8 +247,8 @@ def main():
         inicia_sistema_do_zero()
 
     while True:
-        print(gerenciamento_inodes[0], gerenciamento_inodes[1], gerenciamento_inodes[2], gerenciamento_inodes[3])
-        print(gerenciamento_blocos[2500],gerenciamento_blocos[2501],gerenciamento_blocos[2502],gerenciamento_blocos[2503])
+        #print(gerenciamento_inodes[0], gerenciamento_inodes[1], gerenciamento_inodes[2], gerenciamento_inodes[3])
+        #print(gerenciamento_blocos[2500],gerenciamento_blocos[2501],gerenciamento_blocos[2502],gerenciamento_blocos[2503])
         caminho_atual_diretorio_string = gerenciamento_inodes[caminho_memoria_diretorio_atual]
         comando = input(f'{caminho_atual_diretorio_string[1]}~:')
         comando_separado = comando.split(' ')
@@ -405,14 +406,16 @@ def main():
                     add_info_inode(
                         caminho_endereco, # endereco na memoria onde o arquivo está
                         diretorio_novo,
-                        caminho_atual_str+f"{nome}/", 
+                        caminho_atual_str+f"{nome}/",
                         data_de_criacao, 
                         data_de_modificacao
                     )
                     # adiciona endereco do arquivo no inode do diretorio
                     add_endereco_no_diretorio(caminho_endereco)
-                    caminho_atual_diretorio_string += f"{nome}/"
                     caminho_memoria_diretorio_atual = caminho_endereco
+                    caminho_atual_str = caminho_atual_str+f"{nome}/"
+                    caminho_atual_diretorio_string = verifica_se_arquivo_existe(diretorio_novo)
+                    
         
         # Remover diretório (rmdir diretorio) - só funciona se diretório estiver vazio
         elif comando.startswith("rmdir"):
@@ -436,9 +439,50 @@ def main():
 
 
         # Trocar de diretório (cd diretorio) *Não esquecer dos arquivos especiais . e ..
-        elif comando.startswith("cd"): #TODO: arrumar
-            #TODO em algum momento atualizar a variavel atual
-            atual = '' #nome do diretorio buscado
+        elif comando.startswith("cd"): 
+            if len(comando_separado) == 1:
+                print("Digite o nome do diretorio")
+            else:
+                destino = comando_separado[1]
+                if destino == '.':
+                    caminho_atual_str = 'home/' # caminho até o arquivo
+                    caminho_endereco = 0        # endereco na memoria onde o diretorio atual está
+                    caminho_memoria_diretorio_atual = 0
+                elif destino == '..':
+                    if caminho_atual_str == 'home/':
+                        pass
+                    else:
+                        lista_diretorios = caminho_atual_str[:-1:].split('/')
+                        atual = lista_diretorios[-1]
+                        lista_diretorios.remove(atual)
+                        lista_diretorios.remove('home')
+                        caminho_atual_str = 'home/' # caminho até o arquivo
+                        caminho_endereco = 0        # endereco na memoria onde o diretorio atual está
+                        caminho_memoria_diretorio_atual = 0
+                        for diretorio in lista_diretorios:
+                            #print(diretorio, gerenciamento_inodes[verifica_se_arquivo_existe(diretorio)])
+                            if diretorio != "" and verifica_se_arquivo_existe(diretorio):
+                                conteudo_inode_diretorio = gerenciamento_inodes[verifica_se_arquivo_existe(diretorio)]
+                                caminho_atual_str = conteudo_inode_diretorio[1]    # caminho até o arquivo
+                                caminho_endereco = conteudo_inode_diretorio[2]     # endereco na memoria onde o diretorio atual está
+                                caminho_memoria_diretorio_atual = conteudo_inode_diretorio[2]
+                else:
+                    numero = destino.count('/')
+                    if numero == 0 and verifica_se_arquivo_existe(destino):
+                        conteudo_inode_diretorio = gerenciamento_inodes[verifica_se_arquivo_existe(destino)]
+                        caminho_atual_str = conteudo_inode_diretorio[1]    # caminho até o arquivo
+                        caminho_endereco = conteudo_inode_diretorio[2]     # endereco na memoria onde o diretorio atual está
+                        caminho_memoria_diretorio_atual = conteudo_inode_diretorio[2]
+                    else:
+                        lista_diretorios = destino.split('/')
+                        for diretorio in lista_diretorios:
+                            if diretorio != "" and verifica_se_arquivo_existe(diretorio):
+                                conteudo_inode_diretorio = gerenciamento_inodes[verifica_se_arquivo_existe(diretorio)]
+                                caminho_atual_str = conteudo_inode_diretorio[1]    # caminho até o arquivo
+                                caminho_endereco = conteudo_inode_diretorio[2]     # endereco na memoria onde o diretorio atual está
+                                caminho_memoria_diretorio_atual = conteudo_inode_diretorio[2]
+                            else:
+                                print(f'Erro: diretorio {diretorio} não existe.')
 
 
 main()
