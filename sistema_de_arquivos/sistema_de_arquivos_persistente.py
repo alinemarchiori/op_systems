@@ -222,6 +222,16 @@ def desaloca_blocos(lista_blocos = list):
             TABELA.setLivre(bloco)
 
 
+def recebe_endereco_retorna_dados(conteudo):
+    global gerenciamento_inodes
+    conteudo_inode = gerenciamento_inodes[conteudo]
+    return conteudo_inode[0], conteudo_inode[5], conteudo_inode[6]
+
+
+def muda_data_modificacao(endereco): #TODO: mudar a data de modificação em tudo 
+    global gerenciamento_inodes
+
+
 def main():
     global USER, caminho_atual_str, caminho_endereco, caminho_memoria_diretorio_atual
     USER = input("Digite o nome do usuário: ")
@@ -234,7 +244,8 @@ def main():
         caminho_atual_diretorio_string = gerenciamento_inodes[caminho_memoria_diretorio_atual]
         comando = input(f'{caminho_atual_diretorio_string[1]}~:')
         comando_separado = comando.split(' ')
-        nome = comando_separado[1]
+        if not comando.startswith('ls'):
+            nome = comando_separado[1]
         
         # comandos sobre arquivos
         # Criar arquivo (touch arquivo) 
@@ -347,29 +358,45 @@ def main():
         # Criar diretório (mkdir diretorio)
         elif comando.startswith("mkdir"): #TODO: arrumar
             diretorio_novo = comando_separado[1]
-            a =  0
-            if atual.nome_atual != diretorio_novo:
-                
-                for i in atual.proximos_diretorios:
-                    
-                    if i.nome_atual == diretorio_novo:
-                        a = 1
-                        print('diretório existente')
-                        break
-                    
-                if a == 0 :
-                    atual.criaDiretorio(diretorio_novo)
-
+            if nome.endswith('.txt'):
+                print("Erro: nome do diretorio não pode conter extensão .txt")
             else:
-                print('diretório existente')
-            
+                if verifica_se_arquivo_existe(diretorio_novo):
+                    print("Erro: diretório já existe")
+                else:
+                    caminho_endereco = TABELA.getPosicaoLivreInode()
+                    TABELA.setOcupado(caminho_endereco)
+                    data_de_criacao, data_de_modificacao = data_hora_atual()
+
+                    add_info_inode(
+                        caminho_endereco, # endereco na memoria onde o arquivo está
+                        diretorio_novo,
+                        caminho_atual_str+f"{nome}/", 
+                        data_de_criacao, 
+                        data_de_modificacao
+                    )
+                    # adiciona endereco do arquivo no inode do diretorio
+                    add_endereco_no_diretorio(caminho_endereco)
+                    caminho_atual_diretorio_string += f"{nome}/"
+                    caminho_memoria_diretorio_atual = caminho_endereco
         
         # Remover diretório (rmdir diretorio) - só funciona se diretório estiver vazio
         elif comando.startswith("rmdir"): #TODO: arrumar
             diretorio_novo = comando_separado(1)
+
+
         # Listar o conteúdo de um diretório (ls diretório)
-        elif comando.startswith("ls"): #TODO: arrumar
-            pass
+        elif comando.startswith("ls"): #TODO: arrumar para adicionar o nome do diretorio no comando
+            conteudo_inode_diretorio = gerenciamento_inodes[caminho_memoria_diretorio_atual]
+            conteudo_diretorio = conteudo_inode_diretorio[-1]
+            for conteudo in conteudo_diretorio:
+                nome, data_de_criacao, data_de_modificacao = recebe_endereco_retorna_dados(conteudo)
+                if nome.endswith('.txt'):
+                    print(f'arq   {nome}    criado em: {data_de_criacao}    modificado em: {data_de_modificacao}')
+                else:
+                    print(f'dir   {nome}    criado em: {data_de_criacao}    modificado em: {data_de_modificacao}')
+
+
         # Trocar de diretório (cd diretorio) *Não esquecer dos arquivos especiais . e ..
         elif comando.startswith("cd"): #TODO: arrumar
             #TODO em algum momento atualizar a variavel atual
