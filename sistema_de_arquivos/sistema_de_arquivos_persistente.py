@@ -207,12 +207,19 @@ def add_endereco_no_diretorio(endereco_arquivo_ou_diretorio):
 def desaloca_inode(endereco_inode):
     global gerenciamento_inodes, TABELA
     conteudo_inode_diretorio = gerenciamento_inodes[caminho_memoria_diretorio_atual]
-    conteudo_inode_diretorio[-1].remove(endereco_inode)
     conteudo_inode = gerenciamento_inodes[endereco_inode]
     if conteudo_inode[0].endswith('.txt'):
+        conteudo_inode_diretorio[-1].remove(endereco_inode)
         desaloca_blocos(conteudo_inode[-1])
-    TABELA.setLivre(endereco_inode)
-    gerenciamento_inodes[endereco_inode] = []
+        TABELA.setLivre(endereco_inode)
+        gerenciamento_inodes[endereco_inode] = []
+    else:
+        if len(conteudo_inode[-1]) > 0:
+            print("Erro: só pode remover diretórios vazios.")
+        else:
+            conteudo_inode_diretorio[-1].remove(endereco_inode)
+            TABELA.setLivre(endereco_inode)
+            gerenciamento_inodes[endereco_inode] = []
 
 
 def desaloca_blocos(lista_blocos = list):
@@ -279,7 +286,7 @@ def main():
 
 
         # Escrever no arquivo (echo "conteudo legal" >> arquivo)
-        elif comando_separado[0] == "echo":
+        elif comando_separado[0] == "echo": #TODO: arrumar para poder concatenar texto com o que já existe
             conteudo_arquivo = ''
             copiar = 0
             for caracter in comando:               
@@ -317,16 +324,43 @@ def main():
 
         # Copiar arquivo (cp arquivo1 arquivo2)
         elif comando_separado[0] == "cp": #TODO: arrumar
+            nome_primeiro_arquivo = comando_separado[1]
             nome_segundo_arquivo = comando_separado[2]
-            if verifica_se_arquivo_existe(nome):
+            if verifica_se_arquivo_existe(nome_primeiro_arquivo):
                 if not nome_segundo_arquivo.endswith('.txt'):
                     nome_segundo_arquivo += '.txt'
-                if verifica_se_arquivo_existe(nome_segundo_arquivo):
-                    pass
+                if not verifica_se_arquivo_existe(nome_segundo_arquivo):
+                    conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome_primeiro_arquivo)]
+                    lista_enderecos_blocos = conteudo_inode_arquivo[-1]
+                    conteudo_arquivo_um = ''.join(map(str, [gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos]))
+                    caminho_endereco = TABELA.getPosicaoLivreInode()
+                    TABELA.setOcupado(caminho_endereco)
+                    data_de_criacao, data_de_modificacao = data_hora_atual()
+
+                    add_info_inode(
+                        caminho_endereco, # endereco na memoria onde o arquivo está
+                        nome_segundo_arquivo,
+                        caminho_atual_str, 
+                        data_de_criacao, 
+                        data_de_modificacao
+                    )
+                    # adiciona endereco do arquivo no inode do diretorio
+                    add_endereco_no_diretorio(caminho_endereco)
+                    lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo_um))
+                    inode_arquivo = gerenciamento_inodes[caminho_endereco]
+                    del inode_arquivo[-1]
+                    inode_arquivo.append(lista_enderecos)
+
                 else:
-                     print('Erro: O nome ' + comando_separado[2] + ' já está em uso')
+                    conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome_primeiro_arquivo)]
+                    lista_enderecos_blocos = conteudo_inode_arquivo[-1]
+                    conteudo_arquivo_um = ''.join(map(str, [gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos]))
+                    lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo_um))
+                    inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome_segundo_arquivo)]
+                    del inode_arquivo[-1]
+                    inode_arquivo.append(lista_enderecos)
             else:
-                print('Erro : O arquivo ' + nome + ' não existe')  
+                print('Erro : O arquivo ' + nome_primeiro_arquivo + ' não existe')  
 
             
         # Renomear arquivo (mv arquivo1 arquivo2)
@@ -356,7 +390,7 @@ def main():
         
         # comandos sobre diretorios
         # Criar diretório (mkdir diretorio)
-        elif comando.startswith("mkdir"): #TODO: arrumar
+        elif comando.startswith("mkdir"):
             diretorio_novo = comando_separado[1]
             if nome.endswith('.txt'):
                 print("Erro: nome do diretorio não pode conter extensão .txt")
@@ -381,8 +415,12 @@ def main():
                     caminho_memoria_diretorio_atual = caminho_endereco
         
         # Remover diretório (rmdir diretorio) - só funciona se diretório estiver vazio
-        elif comando.startswith("rmdir"): #TODO: arrumar
-            diretorio_novo = comando_separado(1)
+        elif comando.startswith("rmdir"):
+            diretorio = comando_separado(1)
+            if verifica_se_arquivo_existe(diretorio):
+                desaloca_inode(verifica_se_arquivo_existe(nome))
+            else:
+                print('Erro : O arquivo ' + nome + ' não existe')
 
 
         # Listar o conteúdo de um diretório (ls diretório)
