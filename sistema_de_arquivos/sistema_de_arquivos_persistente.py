@@ -206,6 +206,8 @@ def add_endereco_no_diretorio(endereco_arquivo_ou_diretorio):
 
 def desaloca_inode(endereco_inode):
     global gerenciamento_inodes, TABELA
+    conteudo_inode_diretorio = gerenciamento_inodes[caminho_memoria_diretorio_atual]
+    conteudo_inode_diretorio[-1].remove(endereco_inode)
     conteudo_inode = gerenciamento_inodes[endereco_inode]
     if conteudo_inode[0].endswith('.txt'):
         desaloca_blocos(conteudo_inode[-1])
@@ -269,14 +271,11 @@ def main():
         elif comando_separado[0] == "echo":
             conteudo_arquivo = ''
             copiar = 0
-            for caracter in comando:
-                
+            for caracter in comando:               
                 if caracter == '"' or caracter == "'":
                         copiar += 1
-
                 if copiar == 1:
                     conteudo_arquivo += caracter
-
             conteudo_arquivo += '"'
 
             if comando_separado[-2] == ">>":
@@ -294,8 +293,11 @@ def main():
 
         # Ler arquivo (cat arquivo)
         elif comando_separado[0] == "cat": #TODO: arrumar
-            if gerenciamento_inodes[nome]:
-                print(gerenciamento_inodes[nome][-1])
+            if verifica_se_arquivo_existe(nome):
+                conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+                lista_enderecos_blocos = conteudo_inode_arquivo[-1]
+                print(''.join(map(str, [gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos])))
+                
             else:
                 print('Erro : O arquivo ' + nome + ' não existe')
 
