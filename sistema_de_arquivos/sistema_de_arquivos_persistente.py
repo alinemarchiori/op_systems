@@ -283,8 +283,11 @@ def main():
                 if verifica_se_arquivo_existe(nome):
                     lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo[1:-1:]))
                     inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
-                    del inode_arquivo[-1]
-                    inode_arquivo.append(lista_enderecos)
+                    if len(lista_enderecos) <= 425:
+                        del inode_arquivo[-1]
+                        inode_arquivo.append(lista_enderecos)
+                    else:
+                        print("Você excedeu o tamanho máximo de arquivo permitido.")
                 else:
                     print('Erro : O arquivo ' + nome + ' não existe')
             else:
@@ -292,7 +295,7 @@ def main():
 
 
         # Ler arquivo (cat arquivo)
-        elif comando_separado[0] == "cat": #TODO: arrumar
+        elif comando_separado[0] == "cat":
             if verifica_se_arquivo_existe(nome):
                 conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
                 lista_enderecos_blocos = conteudo_inode_arquivo[-1]
@@ -303,23 +306,42 @@ def main():
 
         # Copiar arquivo (cp arquivo1 arquivo2)
         elif comando_separado[0] == "cp": #TODO: arrumar
-            if gerenciamento_inodes[nome]:
-                nome_atual = comando_separado[2]
-                conteudo_anterior = gerenciamento_inodes.pop(nome)
-                gerenciamento_inodes[nome_atual] = conteudo_anterior
-                gerenciamento_inodes[nome] = conteudo_anterior
+            nome_segundo_arquivo = comando_separado[2]
+            if verifica_se_arquivo_existe(nome):
+                if not nome_segundo_arquivo.endswith('.txt'):
+                    nome_segundo_arquivo += '.txt'
+                if verifica_se_arquivo_existe(nome_segundo_arquivo):
+                    pass
+                else:
+                     print('Erro: O nome ' + comando_separado[2] + ' já está em uso')
+            else:
+                print('Erro : O arquivo ' + nome + ' não existe')  
 
             
         # Renomear arquivo (mv arquivo1 arquivo2)
-        elif comando_separado[0] == "mv": #TODO: arrumar
-            if gerenciamento_inodes[nome]:
-                if not gerenciamento_inodes[comando_separado[2]]:
-                    nome_atual = comando_separado[2]
-                    conteudo_anterior = gerenciamento_inodes.pop(nome)
-                    gerenciamento_inodes[nome_atual] = conteudo_anterior
-                else:
-                     print('Erro: O nome ' + comando_separado[2] + ' já está em uso')
-                
+        elif comando_separado[0] == "mv":
+            novo_nome = comando_separado[2]
+            if verifica_se_arquivo_existe(nome):
+                if nome.endswith('.txt'):              # muda nome de arquivo
+                    if not novo_nome.endswith('.txt'):
+                        novo_nome += '.txt'
+                    if not verifica_se_arquivo_existe(novo_nome):
+                        endereco = verifica_se_arquivo_existe(nome)
+                        conteudo_inode_arquivo = gerenciamento_inodes[endereco]
+                        conteudo_inode_arquivo[0] = novo_nome
+                        gerenciamento_inodes[endereco] = conteudo_inode_arquivo
+                    else:
+                        print('Erro: O nome ' + novo_nome + ' já está em uso')
+                else:                                  # muda nome de diretorio
+                    if not verifica_se_arquivo_existe(novo_nome):
+                        endereco = verifica_se_arquivo_existe(nome)
+                        conteudo_inode = gerenciamento_inodes[endereco]
+                        conteudo_inode[0] = novo_nome
+                        gerenciamento_inodes[endereco] = conteudo_inode
+                    else:
+                        print('Erro: O nome ' + novo_nome + ' já está em uso')
+            else:
+                print('Erro : O arquivo/diretorio ' + nome + ' não existe')    
         
         # comandos sobre diretorios
         # Criar diretório (mkdir diretorio)
@@ -352,9 +374,6 @@ def main():
         elif comando.startswith("cd"): #TODO: arrumar
             #TODO em algum momento atualizar a variavel atual
             atual = '' #nome do diretorio buscado
-        # Renomear diretorio (mv diretorio1 diretorio2) 
-        elif comando.startswith("mv"): #TODO: arrumar
-            pass
 
 
 main()
