@@ -130,15 +130,23 @@ def aloca_blocos(lista_blocos = list) -> list:
     return enderecos
 
 
-def verifica_se_arquivo_existe():
-    pass
-
+def verifica_se_arquivo_existe(nome_arquivo):
+    global gerenciamento_inodes
+    conteudo_diretorio = gerenciamento_inodes[caminho_memoria_diretorio_atual]
+    lista_enderecos = conteudo_diretorio[-1]
+    if len(lista_enderecos):
+        for endereco in lista_enderecos:
+            info_inode_arquivo = gerenciamento_inodes[endereco]
+            if info_inode_arquivo[0] == nome_arquivo:
+                return endereco
+    return None
+    
 
 # O inode contêm a seguinte estrutura:
 '''
 Nome do arquivo/diretório .......................0
 Diretorios anteriores ...........................1
-Variavel que indica se é arquivo ou diretório ...2
+Endereço do diretório que está localizado .......2
 Criador .........................................3
 Dono ............................................4
 Tamanho .........................................5
@@ -153,7 +161,6 @@ Apontadores para blocos/inodes ..................10
 def add_info_inode(
         endereco_memoria = int,
         nome = str,
-        diretorio_ou_arquivo = str,
         caminho = str,
         data_de_criacao = str,
         data_de_modificacao = str,
@@ -163,7 +170,7 @@ def add_info_inode(
     gerenciamento_inodes[endereco_memoria] = [
             nome, 
             caminho,
-            diretorio_ou_arquivo,
+            endereco_memoria,
             USER, 
             "system", 
             data_de_criacao, 
@@ -194,8 +201,7 @@ def inicia_sistema_do_zero():
 
     add_info_inode(
         caminho_endereco, 
-        'raiz', 
-        'd',
+        'raiz',
         caminho_atual_str, 
         data_de_criacao, 
         data_de_modificacao
@@ -208,50 +214,62 @@ def add_endereco_no_diretorio(endereco_arquivo_ou_diretorio):
     conteudo_inode[-1].append(endereco_arquivo_ou_diretorio)
 
 
+def desaloca_inode(endereco_inode):
+    global gerenciamento_inodes, TABELA
+    conteudo_inode = gerenciamento_inodes[endereco_inode]
+    if conteudo_inode[0].endswith('.txt'):
+        desaloca_blocos(conteudo_inode[-1])
+    TABELA.setLivre(endereco_inode)
+
+
+def desaloca_blocos(lista_blocos = list):
+    global TABELA
+    if len(lista_blocos):
+        for bloco in lista_blocos:
+            TABELA.setLivre(bloco)
+
+
 def main():
     global USER, caminho_atual_str, caminho_endereco, caminho_memoria_diretorio_atual
     USER = input("Digite o nome do usuário: ")
-
     if not (os.path.isfile('sistema.json')):
         inicia_sistema_do_zero()
 
     while True:
-        print(gerenciamento_inodes)
+        #print(gerenciamento_inodes)
         #print(gerenciamento_blocos)
         comando = input(gerenciamento_inodes[caminho_memoria_diretorio_atual])
         print()
         comando_separado = comando.split(' ')
         nome = comando_separado[1]
         
-        
         # comandos sobre arquivos
         # Criar arquivo (touch arquivo) 
-        if comando_separado[0] == "touch":
-            
+        if comando_separado[0] == "touch":   
             if not nome.endswith('.txt'):
                 nome += '.txt'
+            if verifica_se_arquivo_existe(nome):
+                print("Arquivo já existe")
+            else:
+                caminho_endereco = TABELA.getPosicaoLivreInode()
+                TABELA.setOcupado(caminho_endereco)
+                data_de_criacao, data_de_modificacao = data_hora_atual()
 
-            caminho_endereco = TABELA.getPosicaoLivreInode()
-            TABELA.setOcupado(caminho_endereco)
-            data_de_criacao, data_de_modificacao = data_hora_atual()
-
-            add_info_inode(
-                caminho_endereco, # endereco na memoria onde o diretorio atual está
-                nome, 
-                'a',
-                caminho_atual_str, 
-                data_de_criacao, 
-                data_de_modificacao
-            )
-            # adiciona endereco do arquivo no inode do diretorio
-            add_endereco_no_diretorio(caminho_endereco)
+                add_info_inode(
+                    caminho_endereco, # endereco na memoria onde o arquivo está
+                    nome,
+                    caminho_atual_str, 
+                    data_de_criacao, 
+                    data_de_modificacao
+                )
+                # adiciona endereco do arquivo no inode do diretorio
+                add_endereco_no_diretorio(caminho_endereco)
 
             
         # Remover arquivo (rm arquivo)
         elif comando_separado[0] == "rm": #TODO: arrumar
-            if gerenciamento_inodes[nome]:
-                gerenciamento_inodes.pop(nome)
-            
+            if verifica_se_arquivo_existe(nome):
+                desaloca_inode(verifica_se_arquivo_existe(nome))
             else:
                 print('Erro : O arquivo ' + nome + ' não existe')
                         
