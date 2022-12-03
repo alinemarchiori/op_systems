@@ -51,8 +51,8 @@ class Tabela:
     
     def getPosicaoLivreBloco(self):
         for posicao in range(2500, len(self.tabela_inodes_e_blocos_livres_ocupados)):
-            if self.tabela_inodes_e_blocos_livres_ocupados[posicao] == "1":
-                return posicao
+            if self.tabela_inodes_e_blocos_livres_ocupados[posicao] == "0":
+                return posicao      
         return None
 
     def transformaTabelaemString(self):
@@ -101,16 +101,6 @@ def cria_inodes_blocos():
 
         for j in range(2500, 62500):
             gerenciamento_blocos[j] = ''
-    
-
-def calcula_tamanho(string = str) -> int:
-    pass
-
-
-def verifica_se_tem_extensao(nome):  
-    if nome.endswith('.txt'):
-        return 'a'
-    return 'd'
 
 
 def corta_conteudo(string = str) -> list:
@@ -122,7 +112,7 @@ def aloca_blocos(lista_blocos = list) -> list:
     enderecos = []
 
     for conteudo in lista_blocos:
-        posicao_livre = TABELA.getPosicaoLivreInode()
+        posicao_livre = TABELA.getPosicaoLivreBloco()
         enderecos.append(posicao_livre)
         TABELA.setOcupado(posicao_livre)
         gerenciamento_blocos[posicao_livre] = conteudo
@@ -220,6 +210,7 @@ def desaloca_inode(endereco_inode):
     if conteudo_inode[0].endswith('.txt'):
         desaloca_blocos(conteudo_inode[-1])
     TABELA.setLivre(endereco_inode)
+    gerenciamento_inodes[endereco_inode] = []
 
 
 def desaloca_blocos(lista_blocos = list):
@@ -236,10 +227,10 @@ def main():
         inicia_sistema_do_zero()
 
     while True:
-        #print(gerenciamento_inodes)
-        #print(gerenciamento_blocos)
-        comando = input(gerenciamento_inodes[caminho_memoria_diretorio_atual])
-        print()
+        print(gerenciamento_inodes[0], gerenciamento_inodes[1], gerenciamento_inodes[2], gerenciamento_inodes[3])
+        print(gerenciamento_blocos[2500],gerenciamento_blocos[2501],gerenciamento_blocos[2502],gerenciamento_blocos[2503])
+        caminho_atual_diretorio_string = gerenciamento_inodes[caminho_memoria_diretorio_atual]
+        comando = input(f'{caminho_atual_diretorio_string[1]}~:')
         comando_separado = comando.split(' ')
         nome = comando_separado[1]
         
@@ -267,16 +258,39 @@ def main():
 
             
         # Remover arquivo (rm arquivo)
-        elif comando_separado[0] == "rm": #TODO: arrumar
+        elif comando_separado[0] == "rm":
             if verifica_se_arquivo_existe(nome):
                 desaloca_inode(verifica_se_arquivo_existe(nome))
             else:
                 print('Erro : O arquivo ' + nome + ' não existe')
-                        
+
+
         # Escrever no arquivo (echo "conteudo legal" >> arquivo)
-        elif comando.startswith("echo"): #TODO: arrumar
-            #verifica_se_o_arquivo_existe_no_diretorio(comando_separado[-1], atual)
-            pass
+        elif comando_separado[0] == "echo":
+            conteudo_arquivo = ''
+            copiar = 0
+            for caracter in comando:
+                
+                if caracter == '"' or caracter == "'":
+                        copiar += 1
+
+                if copiar == 1:
+                    conteudo_arquivo += caracter
+
+            conteudo_arquivo += '"'
+
+            if comando_separado[-2] == ">>":
+                nome = comando_separado[-1]
+                if verifica_se_arquivo_existe(nome):
+                    lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo[1:-1:]))
+                    inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+                    del inode_arquivo[-1]
+                    inode_arquivo.append(lista_enderecos)
+                else:
+                    print('Erro : O arquivo ' + nome + ' não existe')
+            else:
+                print("Comando inválido")
+
 
         # Ler arquivo (cat arquivo)
         elif comando_separado[0] == "cat": #TODO: arrumar
