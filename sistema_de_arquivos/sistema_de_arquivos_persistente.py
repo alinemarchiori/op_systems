@@ -3,6 +3,7 @@
 
 from datetime import datetime
 import os.path
+import json
 
 #TODO: fazer tratamento de erros caso o usuário não digite o caminho certo
 #TODO: deixar persistente
@@ -61,6 +62,9 @@ class Tabela:
     def transformaTabelaemString(self):
         return " ".join(self.tabela_inodes_e_blocos_livres_ocupados)
 
+    def transformaStringemTabela(self, string):
+        self.tabela_inodes_e_blocos_livres_ocupados = string.split(" ")
+
 '''
 Nome do arquivo/diretório ..............-> 128 caracteres -> 128 bytes
 Diretório ou arquivo ...................-> 1 caracteres   -> 1 bytes
@@ -96,6 +100,29 @@ caminho_endereco = 0
 caminho_memoria_diretorio_atual = 0
 
 
+def escreveNaMemoria():
+    global gerenciamento_blocos, gerenciamento_inodes, TABELA
+    arq_json = {}
+    arq_json.update(gerenciamento_inodes)
+    arq_json.update(gerenciamento_blocos)
+    arq_json["TABELA"] = TABELA.transformaTabelaemString()
+    str_final = json.dumps(arq_json)
+    dic = json.loads(str_final)
+    with open('sistema.json', 'w') as file:
+        json.dump(dic, file)
+
+
+def leArquivoJson():
+    global gerenciamento_blocos, gerenciamento_inodes, TABELA
+    with open('sistema.json') as file:
+        dados = json.load(file)
+    TABELA.transformaStringemTabela(dados["TABELA"])
+    for indice in range(0, 2500):
+        gerenciamento_inodes[indice] = dados[str(indice)]
+    for indice in range(2500, 62500):
+        gerenciamento_inodes[indice] = dados[str(indice)]
+
+
 def cria_inodes_blocos():
     global gerenciamento_inodes, gerenciamento_blocos
     if not (os.path.isfile('sistema.json')):
@@ -113,7 +140,7 @@ def corta_conteudo(string = str) -> list:
 def aloca_blocos(lista_blocos = list) -> list:
     global TABELA, gerenciamento_blocos
     enderecos = []
-
+    print(lista_blocos)
     for conteudo in lista_blocos:
         posicao_livre = TABELA.getPosicaoLivreBloco()
         enderecos.append(posicao_livre)
@@ -160,17 +187,18 @@ def add_info_inode(
     
     tamanho = 2000 #bytes (tamanho do inode)
     gerenciamento_inodes[endereco_memoria] = [
-            nome, 
-            caminho,
-            endereco_memoria,
-            USER, 
-            "system", 
-            data_de_criacao, 
-            data_de_modificacao, 
-            USER, 
-            tamanho,
-            []
-        ]
+        nome, 
+        caminho,
+        endereco_memoria,
+        USER, 
+        "system", 
+        data_de_criacao, 
+        data_de_modificacao, 
+        USER, 
+        tamanho,
+        []
+    ]
+
 
 
 def data_hora_atual():
@@ -214,6 +242,7 @@ def desaloca_inode(endereco_inode):
         desaloca_blocos(conteudo_inode[-1])
         TABELA.setLivre(endereco_inode)
         gerenciamento_inodes[endereco_inode] = []
+        escreveNaMemoria()
     else:
         if len(conteudo_inode[-1]) > 0:
             print("Erro: só pode remover diretórios vazios.")
@@ -221,6 +250,7 @@ def desaloca_inode(endereco_inode):
             conteudo_inode_diretorio[-1].remove(endereco_inode)
             TABELA.setLivre(endereco_inode)
             gerenciamento_inodes[endereco_inode] = []
+            escreveNaMemoria()
 
 
 def desaloca_blocos(lista_blocos = list):
@@ -247,17 +277,21 @@ def muda_tamanho_arquivo(endereco):
     global gerenciamento_inodes
     conteudo_inode = gerenciamento_inodes[endereco]
     tamanho = len(conteudo_inode[-1])
-    conteudo_inode[8] += tamanho*1000
+    conteudo_inode[8] += tamanho*4000
     gerenciamento_inodes[endereco] = conteudo_inode
 
 def main():
     global USER, caminho_atual_str, caminho_endereco, caminho_memoria_diretorio_atual
+    lista_enderecos_blocos = []
     USER = input("Digite o nome do usuário: ")
     if not (os.path.isfile('sistema.json')):
         inicia_sistema_do_zero()
-
+        escreveNaMemoria()
+    else:
+        leArquivoJson()
+    
     while True:
-        #print(gerenciamento_inodes[0], gerenciamento_inodes[1], gerenciamento_inodes[2], gerenciamento_inodes[3])
+        print(gerenciamento_inodes[0], gerenciamento_inodes[1], gerenciamento_inodes[2], gerenciamento_inodes[3])
         #print(gerenciamento_blocos[2500],gerenciamento_blocos[2501],gerenciamento_blocos[2502],gerenciamento_blocos[2503])
         caminho_atual_diretorio_string = gerenciamento_inodes[caminho_memoria_diretorio_atual]
         comando = input(f'{caminho_atual_diretorio_string[1]}~:')
@@ -286,6 +320,7 @@ def main():
                 )
                 # adiciona endereco do arquivo no inode do diretorio
                 add_endereco_no_diretorio(caminho_endereco)
+                escreveNaMemoria()
 
             
         # Remover arquivo (rm arquivo)
@@ -294,7 +329,7 @@ def main():
                 desaloca_inode(verifica_se_arquivo_existe(nome))
             else:
                 print('Erro : O arquivo ' + nome + ' não existe')
-
+            
 
         # Escrever no arquivo (echo "conteudo legal" >> arquivo)
         elif comando_separado[0] == "echo":
@@ -317,13 +352,20 @@ def main():
                             gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos
                         ]))
                         conteudo_arquivo = "'" + conteudo_existente + "\n" + conteudo_arquivo[1:-1:] + "'"
+                        print(conteudo_arquivo)
+                        desaloca_blocos(lista_enderecos_blocos)
 
                     lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo[1:-1:]))
                     if len(lista_enderecos) <= 425:
                         muda_data_modificacao(verifica_se_arquivo_existe(nome))
+                        inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
                         del inode_arquivo[-1]
                         inode_arquivo.append(lista_enderecos)
+                        gerenciamento_inodes[verifica_se_arquivo_existe(nome)] = inode_arquivo
+                        muda_tamanho_arquivo(verifica_se_arquivo_existe(nome))
+                        escreveNaMemoria()
                     else:
+                        desaloca_blocos(lista_enderecos)
                         print("Você excedeu o tamanho máximo permitido de arquivo.")
                 else:
                     print('Erro : O arquivo ' + nome + ' não existe. Crie o arquivo antes de escrever.')
@@ -370,6 +412,7 @@ def main():
                     del inode_arquivo[-1]
                     inode_arquivo.append(lista_enderecos)
                     muda_tamanho_arquivo(verifica_se_arquivo_existe(nome_segundo_arquivo))
+                    escreveNaMemoria()
 
                 else:
                     conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome_primeiro_arquivo)]
@@ -381,6 +424,7 @@ def main():
                     del inode_arquivo[-1]
                     inode_arquivo.append(lista_enderecos)
                     muda_tamanho_arquivo(verifica_se_arquivo_existe(nome_segundo_arquivo))
+                    escreveNaMemoria()
             else:
                 print('Erro : O arquivo ' + nome_primeiro_arquivo + ' não existe')  
 
@@ -398,6 +442,7 @@ def main():
                         conteudo_inode_arquivo[0] = novo_nome
                         gerenciamento_inodes[endereco] = conteudo_inode_arquivo
                         muda_data_modificacao(endereco)
+                        escreveNaMemoria()
                     else:
                         print('Erro: O nome ' + novo_nome + ' já está em uso')
                 else:                                  # muda nome de diretorio
@@ -407,6 +452,7 @@ def main():
                         conteudo_inode[0] = novo_nome
                         gerenciamento_inodes[endereco] = conteudo_inode
                         muda_data_modificacao(endereco)
+                        escreveNaMemoria()
                     else:
                         print('Erro: O nome ' + novo_nome + ' já está em uso')
             else:
@@ -438,6 +484,7 @@ def main():
                     caminho_memoria_diretorio_atual = caminho_endereco
                     caminho_atual_str = caminho_atual_str+f"{nome}/"
                     caminho_atual_diretorio_string = verifica_se_arquivo_existe(diretorio_novo)
+                    escreveNaMemoria()
                     
         
         # Remover diretório (rmdir diretorio) - só funciona se diretório estiver vazio
