@@ -1,10 +1,11 @@
-#O seu disco rígido possui uma capacidade de 256MB 
+#O seu disco rígido possui uma capacidade de 256MB => 64000 inodes
 #Os blocos para armazenamento de dados possuem 4KB. 
 
 class Inode:
     def __init__(self,nome) -> None:
         self.nome = nome #Nome do arquivo/diretório
         self.diretorio = None #no caso de diretórios talvez tenha que apontar para o diretório anterior 
+
         self.criador = None
         self.dono = None
         self.tamanho = None
