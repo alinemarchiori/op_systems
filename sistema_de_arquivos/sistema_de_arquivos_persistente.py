@@ -4,6 +4,9 @@
 from datetime import datetime
 import os.path
 
+#TODO: fazer tratamento de erros caso o usuário não digite o caminho certo
+#TODO: deixar persistente
+
 # no dicionario abaixo são guardados os inodes e os blocos,
 # cada inode gasta 2 KB de memória, e o sistema
 # reserva espaço para 2500 inodes e 62500 blocos de 4 KB
@@ -139,12 +142,11 @@ Diretorios anteriores ...........................1
 Endereço do diretório que está localizado .......2
 Criador .........................................3
 Dono ............................................4
-Tamanho .........................................5
-Data de criação .................................6
-Data de modificação .............................7
-Permissões de acesso ............................8
-Tamanho do arquivo ..............................9
-Apontadores para blocos/inodes ..................10
+Data de criação .................................5
+Data de modificação .............................6
+Permissões de acesso ............................7
+Tamanho do arquivo ..............................8
+Apontadores para blocos/inodes ..................9
 '''
 
 
@@ -169,7 +171,6 @@ def add_info_inode(
             tamanho,
             []
         ]
-    #print(gerenciamento_inodes[endereco_memoria])
 
 
 def data_hora_atual():
@@ -202,7 +203,6 @@ def add_endereco_no_diretorio(endereco_arquivo_ou_diretorio):
     global gerenciamento_inodes
     conteudo_inode = gerenciamento_inodes[caminho_memoria_diretorio_atual]
     conteudo_inode[-1].append(endereco_arquivo_ou_diretorio)
-    print(conteudo_inode[-1])
 
 
 def desaloca_inode(endereco_inode):
@@ -233,12 +233,22 @@ def desaloca_blocos(lista_blocos = list):
 def recebe_endereco_retorna_dados(conteudo):
     global gerenciamento_inodes
     conteudo_inode = gerenciamento_inodes[conteudo]
-    return conteudo_inode[0], conteudo_inode[5], conteudo_inode[6]
+    return conteudo_inode[0], conteudo_inode[5], conteudo_inode[6], conteudo_inode[8]
 
 
-def muda_data_modificacao(endereco): #TODO: mudar a data de modificação em tudo 
+def muda_data_modificacao(endereco):
     global gerenciamento_inodes
+    conteudo_inode = gerenciamento_inodes[endereco]
+    _, data_modificacao = data_hora_atual()
+    conteudo_inode[6] = data_modificacao
+    gerenciamento_inodes[endereco] = conteudo_inode
 
+def muda_tamanho_arquivo(endereco):
+    global gerenciamento_inodes
+    conteudo_inode = gerenciamento_inodes[endereco]
+    tamanho = len(conteudo_inode[-1])
+    conteudo_inode[8] += tamanho*1000
+    gerenciamento_inodes[endereco] = conteudo_inode
 
 def main():
     global USER, caminho_atual_str, caminho_endereco, caminho_memoria_diretorio_atual
@@ -287,7 +297,7 @@ def main():
 
 
         # Escrever no arquivo (echo "conteudo legal" >> arquivo)
-        elif comando_separado[0] == "echo": #TODO: arrumar para poder concatenar texto com o que já existe
+        elif comando_separado[0] == "echo":
             conteudo_arquivo = ''
             copiar = 0
             for caracter in comando:               
@@ -300,15 +310,23 @@ def main():
             if comando_separado[-2] == ">>":
                 nome = comando_separado[-1]
                 if verifica_se_arquivo_existe(nome):
-                    lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo[1:-1:]))
                     inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+                    if len(inode_arquivo[-1]) > 0:
+                        
+                        conteudo_existente = ''.join(map(str, [
+                            gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos
+                        ]))
+                        conteudo_arquivo = "'" + conteudo_existente + "\n" + conteudo_arquivo[1:-1:] + "'"
+
+                    lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo[1:-1:]))
                     if len(lista_enderecos) <= 425:
+                        muda_data_modificacao(verifica_se_arquivo_existe(nome))
                         del inode_arquivo[-1]
                         inode_arquivo.append(lista_enderecos)
                     else:
-                        print("Você excedeu o tamanho máximo de arquivo permitido.")
+                        print("Você excedeu o tamanho máximo permitido de arquivo.")
                 else:
-                    print('Erro : O arquivo ' + nome + ' não existe')
+                    print('Erro : O arquivo ' + nome + ' não existe. Crie o arquivo antes de escrever.')
             else:
                 print("Comando inválido")
 
@@ -324,7 +342,7 @@ def main():
                 print('Erro : O arquivo ' + nome + ' não existe')
 
         # Copiar arquivo (cp arquivo1 arquivo2)
-        elif comando_separado[0] == "cp": #TODO: arrumar
+        elif comando_separado[0] == "cp":
             nome_primeiro_arquivo = comando_separado[1]
             nome_segundo_arquivo = comando_separado[2]
             if verifica_se_arquivo_existe(nome_primeiro_arquivo):
@@ -351,6 +369,7 @@ def main():
                     inode_arquivo = gerenciamento_inodes[caminho_endereco]
                     del inode_arquivo[-1]
                     inode_arquivo.append(lista_enderecos)
+                    muda_tamanho_arquivo(verifica_se_arquivo_existe(nome_segundo_arquivo))
 
                 else:
                     conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome_primeiro_arquivo)]
@@ -358,8 +377,10 @@ def main():
                     conteudo_arquivo_um = ''.join(map(str, [gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos]))
                     lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo_um))
                     inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome_segundo_arquivo)]
+                    muda_data_modificacao(verifica_se_arquivo_existe(nome_segundo_arquivo))
                     del inode_arquivo[-1]
                     inode_arquivo.append(lista_enderecos)
+                    muda_tamanho_arquivo(verifica_se_arquivo_existe(nome_segundo_arquivo))
             else:
                 print('Erro : O arquivo ' + nome_primeiro_arquivo + ' não existe')  
 
@@ -376,6 +397,7 @@ def main():
                         conteudo_inode_arquivo = gerenciamento_inodes[endereco]
                         conteudo_inode_arquivo[0] = novo_nome
                         gerenciamento_inodes[endereco] = conteudo_inode_arquivo
+                        muda_data_modificacao(endereco)
                     else:
                         print('Erro: O nome ' + novo_nome + ' já está em uso')
                 else:                                  # muda nome de diretorio
@@ -384,6 +406,7 @@ def main():
                         conteudo_inode = gerenciamento_inodes[endereco]
                         conteudo_inode[0] = novo_nome
                         gerenciamento_inodes[endereco] = conteudo_inode
+                        muda_data_modificacao(endereco)
                     else:
                         print('Erro: O nome ' + novo_nome + ' já está em uso')
             else:
@@ -427,15 +450,15 @@ def main():
 
 
         # Listar o conteúdo de um diretório (ls diretório)
-        elif comando.startswith("ls"): #TODO: arrumar para adicionar o nome do diretorio no comando
+        elif comando.startswith("ls"):
             conteudo_inode_diretorio = gerenciamento_inodes[caminho_memoria_diretorio_atual]
             conteudo_diretorio = conteudo_inode_diretorio[-1]
             for conteudo in conteudo_diretorio:
-                nome, data_de_criacao, data_de_modificacao = recebe_endereco_retorna_dados(conteudo)
+                nome, data_de_criacao, data_de_modificacao, tamanho = recebe_endereco_retorna_dados(conteudo)
                 if nome.endswith('.txt'):
-                    print(f'arq   {nome}    criado em: {data_de_criacao}    modificado em: {data_de_modificacao}')
+                    print(f'\narq   {nome}    criado em: {data_de_criacao}    modificado em: {data_de_modificacao}   tamanho: {tamanho} bytes')
                 else:
-                    print(f'dir   {nome}    criado em: {data_de_criacao}    modificado em: {data_de_modificacao}')
+                    print(f'\ndir   {nome}    criado em: {data_de_criacao}    modificado em: {data_de_modificacao}   tamanho: {tamanho} bytes')
 
 
         # Trocar de diretório (cd diretorio) *Não esquecer dos arquivos especiais . e ..
@@ -483,6 +506,7 @@ def main():
                                 caminho_memoria_diretorio_atual = conteudo_inode_diretorio[2]
                             else:
                                 print(f'Erro: diretorio {diretorio} não existe.')
-
+        else:
+            pass
 
 main()
