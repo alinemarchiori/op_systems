@@ -1,16 +1,7 @@
 import time
 from classes import *
-from escalonador import *
-from threading import Thread, Semaphore, Lock
-import random
 
-"""
-
-Além disso, o seu programa deverá mostrar 
-a lista dos dispositivos existentes, o seu estado e os processos que 
-estão fazendo uso ou esperando para fazer uso.
-
-"""
+#AS THREADS NÂO ESTÂO FUNCIONANDO CORRETAMENTE
 
 # tabela de processos -> PRONTOS E BLOQUEADOS
 lista_processos_prontos = []
@@ -28,23 +19,23 @@ def leArquivo(nomedoarquivo):
     linhas = arquivo.readlines()
     return linhas
 
-
 def mostraEstados(processo_executando_agora):
-    global lista_processos_bloqueados, lista_processos_prontos
+    global lista_processos_bloqueados, lista_processos
+    print("\n----------------------RELATORIO-----------------------------")
     print("\nProcesso em execucao: " + str(processo_executando_agora))
+    print("------------------------------------------------------------")
     print("\nProcessos bloqueados:")
-
     for processo in lista_processos_bloqueados:
         print(processo, "Dispositivo: " + str(processo.dispositivo))
-    
+    print("------------------------------------------------------------")
     print("\nProcessos prontos: ")
-    for processo in lista_processos_prontos:
+    for processo in lista_processos:
         print(processo)
-
+    print("------------------------------------------------------------")
     print("Dispositivos existentes: ")
     for dispositivo in lista_de_dispositivos:
         print(f'\nId: {dispositivo}, processos usando: {dispositivo.numero_de_processos_usando}')
-
+    print("------------------------------------------------------------\n")
 
 # printa quantos processos ainda restam na fila
 def getNumeroProcessosFaltantes():
@@ -61,33 +52,15 @@ def listaProcessos(lista_linhas):
         lista_processos.append(objeto_processo)
 
 # algoritmo propriamente dito
-def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
+def alternanciaCircular(lista_de_processos_linha, tempo_de_CPU=1):
     global lista_processos, tempo_total
     #chama a função passando apenas as linhas que tem processos
-    listaProcessos(lista_de_linhas)
-    #linhas_do_arquivo = leArquivo("nomedoarquivo.txt")
-    linhas_do_arquivo = lista_de_linhas
-    #tempo_de_cpu, num_de_dispositivos = linhas_do_arquivo[0].split("|")
-    lista_de_processos = [linhas_do_arquivo[0]]
-    
-    for linha_do_arquivo in range(1,(int(num_de_dispositivos)+1)):
-        linha_separada = linhas_do_arquivo[linha_do_arquivo].split("|")
-        id = linha_separada[0]
-        num_usos_simultaneos = int(linha_separada[1])
-        tempo_operacao = int(linha_separada[2])
-        lista_de_dispositivos.append(Dispositivo(id, num_usos_simultaneos, tempo_operacao))
-    
-    for linha_do_arquivo in range((int(num_de_dispositivos)+1), len(linhas_do_arquivo)):
-        lista_de_processos.append(linhas_do_arquivo[linha_do_arquivo])
+    listaProcessos(lista_de_processos_linha)
 
-    #loop que serve para executar um processo mesmo que os outros já tenham acabado
     while True:
-        #verifica se tem algum processo para ser executado ainda
-        
         if len(lista_processos) > 0:
             #loop que executa em ordem de criação dos processos
             for processo in lista_processos:
-                mostraEstados(processo)
                 time.sleep(1)
                 tempo_total += int(tempo_de_CPU)
 
@@ -95,7 +68,8 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
                     dispositivo.atualizaTempoDemorado(tempo_total)
                     dispositivo.atualizaTempo(int(tempo_de_CPU))
 
-                if processo.escolhe():
+                if 1:
+                #if processo.escolhe():
                     processo.escolheDispositivo(lista_de_dispositivos)
                     lista_processos.remove(processo)
                     lista_processos_bloqueados.append(processo)
@@ -103,10 +77,10 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
                     def callback():
                         processo.dispositivo.semmaphore.acquire()
                         processo.dispositivo.numero_de_processos_usando.append(processo)
-                        
+                        mostraEstados(processo)
                         if processo.dispositivo:
+                            #print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                             while processo.dispositivo.tempo_que_demorou_para_operar <= processo.dispositivo.tempo_operacao:
-                                #mostraEstados(processo)
                                 pass
                             lista_processos.append(processo)
                             lista_processos_bloqueados.remove(processo)
@@ -119,9 +93,7 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
                     processo.atualizaTempo(int(tempo_de_CPU))
                     time.sleep(1)
                     if processo.getTempo() <= 0:
-                        lista_processos.remove(processo)
-                #getNumeroProcessosFaltantes()
-           
+                        lista_processos.remove(processo)   
         else:
             lista_de_dispositivos.clear()
             break
@@ -131,7 +103,7 @@ def alternanciaCircular(lista_de_linhas, tempo_de_CPU=1):
 if __name__ == '__main__':
     linhas_do_arquivo = leArquivo("gerenciador_de_entrada_e_saida/nomedoarquivo.txt")
     tempo_de_cpu, num_de_dispositivos = linhas_do_arquivo[0].split("|")
-    lista_de_processos = []
+    lista_de_processos_linha = []
     
     for linha_do_arquivo in range(1,(int(num_de_dispositivos)+1)):
         linha_separada = linhas_do_arquivo[linha_do_arquivo].split("|")
@@ -141,6 +113,7 @@ if __name__ == '__main__':
         lista_de_dispositivos.append(Dispositivo(id, num_usos_simultaneos, tempo_operacao))
     
     for linha_do_arquivo in range((int(num_de_dispositivos)+1), len(linhas_do_arquivo)):
-        lista_de_processos.append(linhas_do_arquivo[linha_do_arquivo])
-    processos_para_mostrar_o_tempo = alternanciaCircular(lista_de_processos, tempo_de_CPU=tempo_de_cpu)
+        lista_de_processos_linha.append(linhas_do_arquivo[linha_do_arquivo])
+
+    processos_para_mostrar_o_tempo = alternanciaCircular(lista_de_processos_linha, tempo_de_CPU=tempo_de_cpu)
     

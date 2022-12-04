@@ -2,9 +2,6 @@ import random
 from threading import Thread, Semaphore, Lock
 import time
 
-# Esse arquivo guarda uma classe que é usada em dois
-# algoritmos o por prioridade e o alternância circular
-
 #Essa classe tem todas as características que um processo
 #precisa e traz alguns métodos que facilitam a execução dos
 #algoritmos
