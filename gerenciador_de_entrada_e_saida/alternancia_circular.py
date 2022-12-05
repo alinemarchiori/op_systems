@@ -7,6 +7,7 @@ from classes import *
 lista_processos_prontos = []
 lista_processos_bloqueados = []
 lista_de_dispositivos = []
+lista_de_threads = []
 
 # variáveis globais
 lista_processos = []
@@ -34,7 +35,7 @@ def mostraEstados(processo_executando_agora):
     print("------------------------------------------------------------")
     print("Dispositivos existentes: ")
     for dispositivo in lista_de_dispositivos:
-        print(f'\nId: {dispositivo}, processos usando: {dispositivo.numero_de_processos_usando}')
+        print(f'\nId: {dispositivo}, processos usando: {dispositivo.processos_usando}')
     print("------------------------------------------------------------\n")
 
 # printa quantos processos ainda restam na fila
@@ -53,49 +54,61 @@ def listaProcessos(lista_linhas):
 
 # algoritmo propriamente dito
 def alternanciaCircular(lista_de_processos_linha, tempo_de_CPU=1):
-    global lista_processos, tempo_total
+    global lista_processos, tempo_total, lista_de_threads
     #chama a função passando apenas as linhas que tem processos
     listaProcessos(lista_de_processos_linha)
+    lista_processos_prontos = [processo for processo in lista_processos]
 
     while True:
-        if len(lista_processos) > 0:
+        if len(lista_processos + lista_processos_bloqueados) > 0:
+            for i in range(len(lista_processos_bloqueados)):
+                tempo_total += int(tempo_de_CPU)
             #loop que executa em ordem de criação dos processos
-            for processo in lista_processos:
+            for i, processo in enumerate(lista_processos):
                 time.sleep(1)
                 tempo_total += int(tempo_de_CPU)
 
-                for dispositivo in lista_de_dispositivos:
-                    dispositivo.atualizaTempoDemorado(tempo_total)
-                    dispositivo.atualizaTempo(int(tempo_de_CPU))
+                '''for dispositivo in lista_de_dispositivos:
+                    dispositivo.atualizaTempo(int(tempo_de_CPU))'''
 
-                if 1:
+                if processo.escolhe():
                 #if processo.escolhe():
                     processo.escolheDispositivo(lista_de_dispositivos)
                     lista_processos.remove(processo)
                     lista_processos_bloqueados.append(processo)
-
-                    def callback():
+                    #print(processo, processo.dispositivo, processo.dispositivo.tempo_que_demorou_para_operar, processo.dispositivo.tempo_operacao)
+                    #mostraEstados(processo)
+                    def callback(processo):
+                        global lista_processos, lista_processos_bloqueados, tempo_total, lista_processos_prontos
                         processo.dispositivo.semmaphore.acquire()
-                        processo.dispositivo.numero_de_processos_usando.append(processo)
-                        mostraEstados(processo)
+                        processo.dispositivo.addProcesso(processo)
+                        #mostraEstados(processo)
                         if processo.dispositivo:
-                            #print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-                            while processo.dispositivo.tempo_que_demorou_para_operar <= processo.dispositivo.tempo_operacao:
-                                pass
-                            lista_processos.append(processo)
+                            processo.dispositivo.atualizaTempoInicio(tempo_total, processo)
+                            while True:
+                                processo.dispositivo.atualizaTempoTotal(tempo_total, processo)
+                                if processo.terminouES():
+                                    break
                             lista_processos_bloqueados.remove(processo)
-                            processo.dispositivo.numero_de_processos_usando.remove(processo)
-                            processo.dispositivo.semmaphore.release()
+                            lista_processos.append(processo)
+                            processo.dispositivo.removeProcesso(processo)
+                        processo.dispositivo.semmaphore.release()
+                        #processo.liberaDispositivo()
                     processo.fazEntradaSaida(callback)
-
+                    #lista_processos_prontos = [processo for processo in lista_processos_prontos if processo.getTempo() <= 0]
                 else:
                     processo.atualizaTempoDemorado(tempo_total)
                     processo.atualizaTempo(int(tempo_de_CPU))
                     time.sleep(1)
                     if processo.getTempo() <= 0:
-                        lista_processos.remove(processo)   
+                        lista_processos.remove(processo)
+                    #lista_processos_bloqueados = [processo for processo in lista_processos_bloqueados if processo.getTempo() <= 0]
+                #lista_processos = lista_processos_prontos + lista_processos_bloqueados
+                mostraEstados(processo)
+                 
         else:
-            lista_de_dispositivos.clear()
+            #lista_de_threads.clear()
+            #lista_de_dispositivos.clear()
             break
     
     return lista_de_processos_para_mostrar_o_tempo
