@@ -1,6 +1,7 @@
 import random
 from threading import Thread, Semaphore, Lock
 import time
+import copy
 
 #Essa classe tem todas as características que um processo
 #precisa e traz alguns métodos que facilitam a execução dos
@@ -25,12 +26,17 @@ class Processo:
     def escolheDispositivo(self, lista_dispositivos):
         self.dispositivo = random.choice(lista_dispositivos)
         assert self.dispositivo != None
+        #self.dispositivo.addProcesso(self)
 
     def liberaDispositivo(self):
+        #self.dispositivo.removeProcesso(self)
         self.dispositivo = None
 
     def fazEntradaSaida(self, callback):
-        self.dispositivo.fazEntradaSaida(callback)
+        return self.dispositivo.fazEntradaSaida(callback, self)
+
+    def terminouES(self):
+        return self.dispositivo.terminouES(self)
 
     #esse método recebe o tempo de cpu e a cada vez que é
     #chamado diminui esse tempo de cpu do tempo de execução inicial
@@ -71,29 +77,43 @@ class Dispositivo:
         self.id = id
         self.num_usos_simultaneos = num_usos_simultaneos
         self.tempo_operacao = tempo_operacao
-        self.tempo_que_demorou_para_operar = 0
-        self.numero_de_processos_usando = []
+        self.tempo_que_demorou_para_operar = []
+        self.tempo_inicio = []
+        self.processos_usando = []
         self.semmaphore = Semaphore(self.num_usos_simultaneos)
         
     #esse método recebe o tempo de cpu e a cada vez que é
     #chamado diminui esse tempo de cpu do tempo de execução inicial
-    def atualizaTempo(self, tempo_CPU):
-        self.tempo_operacao -= tempo_CPU
+    def atualizaTempoInicio(self, tempo_inicio, processo):
+        self.tempo_inicio[self.processos_usando.index(processo)] = tempo_inicio
+
+    def atualizaTempoTotal(self, tempo_total, processo):
+        self.tempo_que_demorou_para_operar[self.processos_usando.index(processo)] = tempo_total
+
+    def getTempoTotal(self, tempo_total, processo):
+        return self.tempo_que_demorou_para_operar[self.processos_usando.index(processo)]
 
     #esse método apenas retorna o tempo de execução restante
-    def getTempo(self):
-        return self.tempo_operacao
-    
-    #método que vai alterando o tempo total que o processo demorou
-    #pra terminar
-    def atualizaTempoDemorado(self, tempo_atual):
-        self.tempo_que_demorou_para_operar += tempo_atual
+    def terminouES(self, processo):
+        if processo not in self.processos_usando:
+            return True
+        return self.tempo_que_demorou_para_operar[self.processos_usando.index(processo)] - self.tempo_inicio[self.processos_usando.index(processo)] >= self.tempo_operacao
 
-    def fazEntradaSaida(self, callback):
-        #TODO: Sugestão: Tirar a Thread aqui de dentro
-        #TODO: Criar uma lista de Thread e cada Thread cria um, unico, dispositivo
-        thread = Thread(target=callback)
-        thread.run()
+    def fazEntradaSaida(self, callback, processo):
+        thread = Thread(target=callback, args=(processo,))
+        thread.start()
+        return thread
+
+    def addProcesso(self, processo):
+        self.processos_usando.append(processo)
+        self.tempo_que_demorou_para_operar.append(0)
+        self.tempo_inicio.append(0)
+
+    def removeProcesso(self, processo):
+        indice = self.processos_usando.index(processo)
+        self.processos_usando.pop(indice)
+        self.tempo_que_demorou_para_operar.pop(indice)
+        self.tempo_inicio.pop(indice)
 
     def __repr__(self) -> str:
         return f'{self.id}'
