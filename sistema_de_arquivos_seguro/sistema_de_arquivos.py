@@ -123,12 +123,12 @@ def ler_arquivo_de_senhas():
     conteudo = []
     indices = range(len(ler_arquivo_de_usuarios()))
     for indice in indices:
-        conteudo.append(ler_arquivo(f'shadow_{indice}.bin', binario=True))
+        conteudo.append(ler_arquivo(f'shadow_{indice}.txt', binario=True))
     return conteudo
 
 def ler_senha_e_sal(lista_de_senhas, indice):
     #senha_criptografada_e_sal = lista_de_senhas[indice]
-    senha_criptografada_e_sal = ler_arquivo(f"shadow_{indice}.bin", binario=True)
+    senha_criptografada_e_sal = ler_arquivo(f"shadow_{indice}.txt", binario=True)
     #print(senha_criptografada_e_sal)
     sal = senha_criptografada_e_sal[:32]
     senha_criptografada = senha_criptografada_e_sal[32:]
@@ -191,9 +191,9 @@ def escrever_no_arquivo(nome, conteudo, binario=False):
 def salva_senha_no_arquivo(senha_original, indice_usuario):
     sal = gera_sal()
     senha_criptografada = criptografa_senha(senha_original, sal)
-    escrever_no_arquivo(f'shadow_{indice_usuario}.bin', sal + senha_criptografada, binario=True)
+    escrever_no_arquivo(f'shadow_{indice_usuario}.txt', sal + senha_criptografada, binario=True)
 
-def criar_arquivo(nome, criador=USER, permissoes=USER):
+def criar_arquivo(nome, criador=USER, permissoes="00", dono=USER):
     global gerenciamento_blocos, gerenciamento_inodes, TABELA
     if not nome.endswith('.txt') and not nome.endswith('.bin'):
         nome += '.txt'
@@ -211,13 +211,14 @@ def criar_arquivo(nome, criador=USER, permissoes=USER):
             data_de_criacao, 
             data_de_modificacao,
             criador,
-            permissoes
+            permissoes,
+            dono
         )
         # adiciona endereco do arquivo no inode do diretorio
         add_endereco_no_diretorio(caminho_endereco)
         escreveNaMemoria()
 
-def criar_diretorio(nome, criador=USER, permissoes=USER):
+def criar_diretorio(nome, criador=USER, permissoes="00", dono=USER):
     global caminho_atual_str, TABELA, gerenciamento_inodes, gerenciamento_blocos
     diretorio_novo = nome
     if nome.endswith('.txt'):
@@ -237,20 +238,22 @@ def criar_diretorio(nome, criador=USER, permissoes=USER):
                 data_de_criacao, 
                 data_de_modificacao,
                 criador,
-                permissoes
+                permissoes,
+                dono
             )
             # adiciona endereco do arquivo no inode do diretorio
             add_endereco_no_diretorio(caminho_endereco)
-            caminho_memoria_diretorio_atual = caminho_endereco
-            caminho_atual_str = caminho_atual_str+f"{nome}/"
-            caminho_atual_diretorio_string = verifica_se_arquivo_existe(diretorio_novo)
+            #caminho_memoria_diretorio_atual = caminho_endereco
+            #caminho_atual_str = caminho_atual_str+f"{nome}/"
+            #caminho_atual_diretorio_string = verifica_se_arquivo_existe(diretorio_novo)
             escreveNaMemoria()
 
 def criar_usuario(usuario, senha):
     escrever_no_arquivo('passwd.txt', usuario)
     indice = len(ler_arquivo_de_usuarios()) - 1
-    criar_arquivo(f"shadow_{indice}.bin", criador='root', permissoes='root')
+    criar_arquivo(f"shadow_{indice}.txt", criador='root', permissoes='root')
     salva_senha_no_arquivo(senha, indice)
+    criar_diretorio(usuario, usuario, "00", usuario)
 
 def ler_arquivo_de_usuarios():
     conteudo = ler_arquivo('passwd.txt')
@@ -270,6 +273,13 @@ def autentica_usuario(usuario, senha, lista_de_usuarios, lista_de_senhas):
     #print('sal', sal)
     #print('senha criptografada', criptografa_senha(senha, sal))
     return senha_correta_criptografada == criptografa_senha(senha, sal)
+
+def verifica_se_usuario_pode_escrever(usuario, inode):
+    #print(inode[4], inode[7])
+    return inode[4] == usuario or inode[7][1] == '1'
+
+def verifica_se_usuario_pode_ler(usuario, inode):
+    return inode[4] == usuario or inode[7][0] == '1'
 
 def escreveNaMemoria():
     global gerenciamento_blocos, gerenciamento_inodes, TABELA
@@ -342,7 +352,7 @@ Criador .........................................3
 Dono ............................................4
 Data de criação .................................5
 Data de modificação .............................6
-Permissões de acesso ............................7
+Permissões de acesso ............................7 (primeiro bit de leitura privada ou publica, e segundo de escrita privada ou publica)
 Tamanho do arquivo ..............................8
 Apontadores para blocos/inodes ..................9
 '''
@@ -355,7 +365,8 @@ def add_info_inode(
         data_de_criacao = str,
         data_de_modificacao = str,
         criador=USER,
-        permissoes=USER
+        permissoes="00",
+        dono=USER
     ):
     
     tamanho = 2000 #bytes (tamanho do inode)
@@ -364,7 +375,7 @@ def add_info_inode(
         caminho,
         endereco_memoria,
         criador, 
-        "system", 
+        dono, 
         data_de_criacao, 
         data_de_modificacao, 
         permissoes, 
@@ -396,7 +407,10 @@ def inicia_sistema_do_zero():
         'home',
         caminho_atual_str, 
         data_de_criacao, 
-        data_de_modificacao
+        data_de_modificacao,
+        'root',
+        '00',
+        'root'
         )
 
     #criar_arquivo('shadow.txt', 'root', 'root')
@@ -478,10 +492,28 @@ def main():
             else:
                 print("Senha inválida.")
     
+    destino = f"home/{USER}"
+    lista_diretorios = destino.split('/')
+    for diretorio in lista_diretorios:
+        if diretorio != "" and verifica_se_arquivo_existe(diretorio):
+            conteudo_inode_diretorio = gerenciamento_inodes[verifica_se_arquivo_existe(diretorio)]
+            caminho_atual_str = conteudo_inode_diretorio[1]    # caminho até o arquivo
+            caminho_endereco = conteudo_inode_diretorio[2]     # endereco na memoria onde o diretorio atual está
+            caminho_memoria_diretorio_atual = conteudo_inode_diretorio[2]
+
     while True:
         #print(gerenciamento_inodes[0], gerenciamento_inodes[1], gerenciamento_inodes[2], gerenciamento_inodes[3])
         #print(gerenciamento_blocos[2500],gerenciamento_blocos[2501],gerenciamento_blocos[2502],gerenciamento_blocos[2503])
         caminho_atual_diretorio_string = gerenciamento_inodes[caminho_memoria_diretorio_atual]
+        #print(caminho_atual_diretorio_string, caminho_memoria_diretorio_atual)
+        #destino = f"{USER}"
+        #conteudo_inode_diretorio = gerenciamento_inodes[verifica_se_arquivo_existe(destino)]
+        #caminho_atual_str = conteudo_inode_diretorio[1]    # caminho até o arquivo
+        #caminho_endereco = conteudo_inode_diretorio[2]     # endereco na memoria onde o diretorio atual está
+        #caminho_memoria_diretorio_atual = conteudo_inode_diretorio[2]
+        #caminho_memoria_diretorio_atual = caminho_endereco
+        #caminho_atual_str = caminho_atual_str+f"{nome}/"
+        #caminho_atual_diretorio_string = verifica_se_arquivo_existe(diretorio_novo)
         comando = input(f'{caminho_atual_diretorio_string[1]}~:')
         comando_separado = ["pass"]
 
@@ -508,7 +540,10 @@ def main():
                         nome,
                         caminho_atual_str, 
                         data_de_criacao, 
-                        data_de_modificacao
+                        data_de_modificacao,
+                        USER,
+                        '00',
+                        USER
                     )
                     # adiciona endereco do arquivo no inode do diretorio
                     add_endereco_no_diretorio(caminho_endereco)
@@ -541,6 +576,9 @@ def main():
                     nome = comando_separado[-1]
                     if verifica_se_arquivo_existe(nome):
                         inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+                        if not verifica_se_usuario_pode_escrever(USER, inode_arquivo):
+                            print("Permissão negada.")
+                            continue
                         lista_enderecos_blocos = inode_arquivo[-1]
                         if len(inode_arquivo[-1]) > 0:
                             conteudo_existente = ''.join(map(str, [
@@ -575,6 +613,9 @@ def main():
         elif comando_separado[0] == "cat":
             if verifica_se_arquivo_existe(nome):
                 conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+                if not verifica_se_usuario_pode_ler(USER, conteudo_inode_arquivo):
+                    print("Permissao negada.")
+                    continue
                 lista_enderecos_blocos = conteudo_inode_arquivo[-1]
                 #print(gerenciamento_blocos.keys())
                 #exit()
@@ -594,6 +635,9 @@ def main():
                     if not verifica_se_arquivo_existe(nome_segundo_arquivo):
                         conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome_primeiro_arquivo)]
                         lista_enderecos_blocos = conteudo_inode_arquivo[-1]
+                        criador = conteudo_inode_arquivo[3]
+                        dono = conteudo_inode_arquivo[4]
+                        permissoes = conteudo_inode_arquivo[7]
                         conteudo_arquivo_um = ''.join(map(str, [gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos]))
                         caminho_endereco = TABELA.getPosicaoLivreInode()
                         TABELA.setOcupado(caminho_endereco)
@@ -604,7 +648,10 @@ def main():
                             nome_segundo_arquivo,
                             caminho_atual_str, 
                             data_de_criacao, 
-                            data_de_modificacao
+                            data_de_modificacao,
+                            criador,
+                            permissoes,
+                            dono
                         )
                         # adiciona endereco do arquivo no inode do diretorio
                         add_endereco_no_diretorio(caminho_endereco)
@@ -642,6 +689,9 @@ def main():
                         if not verifica_se_arquivo_existe(novo_nome):
                             endereco = verifica_se_arquivo_existe(nome)
                             conteudo_inode_arquivo = gerenciamento_inodes[endereco]
+                            if not verifica_se_usuario_pode_escrever(USER, conteudo_inode_arquivo):
+                                print("Permissao negada.")
+                                continue
                             conteudo_inode_arquivo[0] = novo_nome
                             gerenciamento_inodes[endereco] = conteudo_inode_arquivo
                             muda_data_modificacao(endereco)
