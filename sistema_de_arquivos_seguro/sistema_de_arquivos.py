@@ -3,7 +3,10 @@
 
 from datetime import datetime
 import os.path
-import json
+#import pickle
+import pickle
+import os
+import hashlib
 
 
 # no dicionario abaixo são guardados os inodes e os blocos,
@@ -97,33 +100,204 @@ caminho_atual_str = 'home/'
 caminho_endereco = 0
 caminho_memoria_diretorio_atual = 0
 
+def gera_sal():
+    return os.urandom(32)
+
+def criptografa_senha(senha, sal):
+    return hashlib.pbkdf2_hmac('sha512', senha.encode('utf-8'), sal, 100000)
+
+def ler_arquivo(nome, binario=False):
+    global gerenciamento_blocos, gerenciamento_inodes, lista_enderecos_blocos
+    if verifica_se_arquivo_existe(nome):
+        conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+        lista_enderecos_blocos = conteudo_inode_arquivo[-1]
+        if not binario:
+            return ''.join(map(str, [gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos]))
+        else:
+            #print(gerenciamento_blocos[lista_enderecos_blocos[0]])
+            return b''.join([gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos])
+    else:
+        print('Erro : O arquivo ' + nome + ' não existe')
+
+def ler_arquivo_de_senhas():
+    conteudo = []
+    indices = range(len(ler_arquivo_de_usuarios()))
+    for indice in indices:
+        conteudo.append(ler_arquivo(f'shadow_{indice}.bin', binario=True))
+    return conteudo
+
+def ler_senha_e_sal(lista_de_senhas, indice):
+    #senha_criptografada_e_sal = lista_de_senhas[indice]
+    senha_criptografada_e_sal = ler_arquivo(f"shadow_{indice}.bin", binario=True)
+    #print(senha_criptografada_e_sal)
+    sal = senha_criptografada_e_sal[:32]
+    senha_criptografada = senha_criptografada_e_sal[32:]
+    return senha_criptografada, sal
+
+def escrever_no_arquivo(nome, conteudo, binario=False):
+    global gerenciamento_inodes
+    global gerenciamento_blocos
+    global lista_enderecos_blocos
+    conteudo_arquivo = conteudo
+    '''conteudo_arquivo = ''
+    copiar = 0
+    for caracter in conteudo:               
+        if caracter == '"' or caracter == "'":
+            copiar += 1
+        if copiar == 1:
+            conteudo_arquivo += caracter
+    conteudo_arquivo += '"'''
+    conteudo_novo = ''
+    conteudo_existente = ''
+    if verifica_se_arquivo_existe(nome):
+        inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+        lista_enderecos_blocos = inode_arquivo[-1]
+        if len(inode_arquivo[-1]) > 0:
+            if not binario:
+                conteudo_novo = ''
+                conteudo_existente = ''
+                conteudo_existente = ''.join(map(str, [
+                    gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos
+                ]))
+                conteudo_novo = conteudo_arquivo
+                conteudo_arquivo = conteudo_existente + "\n" + conteudo_novo
+            else:
+                conteudo_novo = b''
+                conteudo_existente = b''
+                conteudo_existente = b''.join(map(bytes, [
+                    gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos
+                ]))
+                conteudo_novo = conteudo_arquivo
+                conteudo_arquivo = conteudo_existente + conteudo_novo
+            
+            desaloca_blocos(lista_enderecos_blocos)
+            lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo))
+        else:
+            lista_enderecos = aloca_blocos(corta_conteudo(conteudo_arquivo))
+        if len(lista_enderecos) <= 425:
+            muda_data_modificacao(verifica_se_arquivo_existe(nome))
+            inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
+            del inode_arquivo[-1]
+            inode_arquivo.append(lista_enderecos)
+            gerenciamento_inodes[verifica_se_arquivo_existe(nome)] = inode_arquivo
+            muda_tamanho_arquivo(verifica_se_arquivo_existe(nome))
+            escreveNaMemoria()
+        else:
+            desaloca_blocos(lista_enderecos)
+            print("Você excedeu o tamanho máximo permitido de arquivo.")
+    else:
+        print('Erro : O arquivo ' + nome + ' não existe. Crie o arquivo antes de escrever.')
+
+def salva_senha_no_arquivo(senha_original, indice_usuario):
+    sal = gera_sal()
+    senha_criptografada = criptografa_senha(senha_original, sal)
+    escrever_no_arquivo(f'shadow_{indice_usuario}.bin', sal + senha_criptografada, binario=True)
+
+def criar_arquivo(nome, criador=USER, permissoes=USER):
+    global gerenciamento_blocos, gerenciamento_inodes, TABELA
+    if not nome.endswith('.txt') and not nome.endswith('.bin'):
+        nome += '.txt'
+    if verifica_se_arquivo_existe(nome):
+        print("Arquivo já existe")
+    else:
+        caminho_endereco = TABELA.getPosicaoLivreInode()
+        TABELA.setOcupado(caminho_endereco)
+        data_de_criacao, data_de_modificacao = data_hora_atual()
+
+        add_info_inode(
+            caminho_endereco, # endereco na memoria onde o arquivo está
+            nome,
+            caminho_atual_str, 
+            data_de_criacao, 
+            data_de_modificacao,
+            criador,
+            permissoes
+        )
+        # adiciona endereco do arquivo no inode do diretorio
+        add_endereco_no_diretorio(caminho_endereco)
+        escreveNaMemoria()
+
+def criar_diretorio(nome, criador=USER, permissoes=USER):
+    global caminho_atual_str, TABELA, gerenciamento_inodes, gerenciamento_blocos
+    diretorio_novo = nome
+    if nome.endswith('.txt'):
+        print("Erro: nome do diretorio não pode conter extensão .txt")
+    else:
+        if verifica_se_arquivo_existe(diretorio_novo):
+            print("Erro: diretório já existe")
+        else:
+            caminho_endereco = TABELA.getPosicaoLivreInode()
+            TABELA.setOcupado(caminho_endereco)
+            data_de_criacao, data_de_modificacao = data_hora_atual()
+
+            add_info_inode(
+                caminho_endereco, # endereco na memoria onde o arquivo está
+                diretorio_novo,
+                caminho_atual_str+f"{nome}/",
+                data_de_criacao, 
+                data_de_modificacao,
+                criador,
+                permissoes
+            )
+            # adiciona endereco do arquivo no inode do diretorio
+            add_endereco_no_diretorio(caminho_endereco)
+            caminho_memoria_diretorio_atual = caminho_endereco
+            caminho_atual_str = caminho_atual_str+f"{nome}/"
+            caminho_atual_diretorio_string = verifica_se_arquivo_existe(diretorio_novo)
+            escreveNaMemoria()
+
+def criar_usuario(usuario, senha):
+    escrever_no_arquivo('passwd.txt', usuario)
+    indice = len(ler_arquivo_de_usuarios()) - 1
+    criar_arquivo(f"shadow_{indice}.bin", criador='root', permissoes='root')
+    salva_senha_no_arquivo(senha, indice)
+
+def ler_arquivo_de_usuarios():
+    conteudo = ler_arquivo('passwd.txt')
+    return conteudo.strip().split('\n')
+
+def verifica_se_usuario_existe(usuario, lista_de_usuarios):
+    return usuario in lista_de_usuarios
+
+def indice_de_usuario(usuario, lista_de_usuarios):
+    return lista_de_usuarios.index(usuario)
+
+def autentica_usuario(usuario, senha, lista_de_usuarios, lista_de_senhas):
+    indice_usuario = indice_de_usuario(usuario, lista_de_usuarios)
+    senha_correta_criptografada, sal = ler_senha_e_sal(lista_de_senhas, indice_usuario)
+    #print('senha correta criptografada', senha_correta_criptografada)
+    #print('senha', senha)
+    #print('sal', sal)
+    #print('senha criptografada', criptografa_senha(senha, sal))
+    return senha_correta_criptografada == criptografa_senha(senha, sal)
 
 def escreveNaMemoria():
     global gerenciamento_blocos, gerenciamento_inodes, TABELA
-    arq_json = {}
-    arq_json.update(gerenciamento_inodes)
-    arq_json.update(gerenciamento_blocos)
-    arq_json["TABELA"] = TABELA.transformaTabelaemString()
-    str_final = json.dumps(arq_json)
-    dic = json.loads(str_final)
-    with open('sistema.json', 'w') as file:
-        json.dump(dic, file)
+    arq_pickle = {}
+    arq_pickle.update(gerenciamento_inodes)
+    arq_pickle.update(gerenciamento_blocos)
+    arq_pickle["TABELA"] = TABELA.transformaTabelaemString()
+    str_final = pickle.dumps(arq_pickle)
+    dic = pickle.loads(str_final)
+    with open('sistema.pickle', 'wb') as file:
+        pickle.dump(dic, file)
 
 
-def leArquivoJson():
+def leArquivopickle():
     global gerenciamento_blocos, gerenciamento_inodes, TABELA
-    with open('sistema.json') as file:
-        dados = json.load(file)
+    with open('sistema.pickle', 'rb') as file:
+        dados = pickle.load(file)
     TABELA.transformaStringemTabela(dados["TABELA"])
+    #print(dados.keys())
     for indice in range(0, 2500):
-        gerenciamento_inodes[indice] = dados[str(indice)]
+        gerenciamento_inodes[indice] = dados[int(indice)]
     for indice in range(2500, 62500):
-        gerenciamento_inodes[indice] = dados[str(indice)]
+        gerenciamento_blocos[indice] = dados[int(indice)]
 
 
 def cria_inodes_blocos():
     global gerenciamento_inodes, gerenciamento_blocos
-    if not (os.path.isfile('sistema.json')):
+    if not (os.path.isfile('sistema.pickle')):
         for i in range(2500):
             gerenciamento_inodes[i] = []
 
@@ -180,6 +354,8 @@ def add_info_inode(
         caminho = str,
         data_de_criacao = str,
         data_de_modificacao = str,
+        criador=USER,
+        permissoes=USER
     ):
     
     tamanho = 2000 #bytes (tamanho do inode)
@@ -187,11 +363,11 @@ def add_info_inode(
         nome, 
         caminho,
         endereco_memoria,
-        USER, 
+        criador, 
         "system", 
         data_de_criacao, 
         data_de_modificacao, 
-        USER, 
+        permissoes, 
         tamanho,
         []
     ]
@@ -222,6 +398,9 @@ def inicia_sistema_do_zero():
         data_de_criacao, 
         data_de_modificacao
         )
+
+    #criar_arquivo('shadow.txt', 'root', 'root')
+    criar_arquivo('passwd.txt', 'root', 'root')
 
 
 def add_endereco_no_diretorio(endereco_arquivo_ou_diretorio):
@@ -280,12 +459,24 @@ def muda_tamanho_arquivo(endereco):
 def main():
     global USER, caminho_atual_str, caminho_endereco, caminho_memoria_diretorio_atual
     lista_enderecos_blocos = []
-    USER = input("Digite o nome do usuário: ")
-    if not (os.path.isfile('sistema.json')):
-        inicia_sistema_do_zero()
-        escreveNaMemoria()
-    else:
-        leArquivoJson()
+    while True:
+        USER = input("Digite o nome do usuário: ")
+        senha_original = input("Digite a sua senha: ")
+        if not (os.path.isfile('sistema.pickle')):
+            inicia_sistema_do_zero()
+            criar_usuario('root', senha_original)
+            criar_usuario(USER, senha_original)
+            escreveNaMemoria()
+            break
+        else:
+            leArquivopickle()
+            if not verifica_se_usuario_existe(USER, ler_arquivo_de_usuarios()):
+                criar_usuario(USER, senha_original)
+            if verifica_se_usuario_existe(USER, ler_arquivo_de_usuarios()) and autentica_usuario(USER, senha_original, ler_arquivo_de_usuarios(), ler_arquivo_de_senhas()):
+                print("Login efetuado com sucesso.")
+                break
+            else:
+                print("Senha inválida.")
     
     while True:
         #print(gerenciamento_inodes[0], gerenciamento_inodes[1], gerenciamento_inodes[2], gerenciamento_inodes[3])
@@ -385,6 +576,8 @@ def main():
             if verifica_se_arquivo_existe(nome):
                 conteudo_inode_arquivo = gerenciamento_inodes[verifica_se_arquivo_existe(nome)]
                 lista_enderecos_blocos = conteudo_inode_arquivo[-1]
+                #print(gerenciamento_blocos.keys())
+                #exit()
                 print(''.join(map(str, [gerenciamento_blocos[endereco] for endereco in lista_enderecos_blocos])))
                 
             else:
@@ -566,6 +759,9 @@ def main():
                                 caminho_memoria_diretorio_atual = conteudo_inode_diretorio[2]
                             else:
                                 print(f'Erro: diretorio {diretorio} não existe.')
+        elif comando_separado[0] == "exit":
+            escreveNaMemoria()
+            break
         else:
             pass
 
